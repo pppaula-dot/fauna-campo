@@ -1,7 +1,7 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#23624A"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.png"><link rel="apple-touch-icon" href="icon.png">
 <script src="jszip.min.js"></script>
-<title>Fauna v2 (teste)</title>
+<title>Caderneta de Fauna</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -78,7 +78,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .bio{border-top:1px dashed var(--line);margin-top:14px;padding-top:12px}
 details.more{margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
 details.more summary{cursor:pointer;font-weight:700;font-size:14px;color:var(--accent);padding:6px 0}
-nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
 nav.tabs button{background:none;border:none;padding:10px 4px 12px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px}
 nav.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
 nav.tabs button[aria-selected="true"]{color:var(--accent)}
@@ -109,6 +109,8 @@ th.n{text-align:right}
 .effort-out{font-family:var(--mono);font-size:14px;background:var(--accent-soft);border-radius:8px;padding:10px 12px}
 textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
 @media (prefers-reduced-motion:no-preference){.toast{transition:opacity .2s}}
+#mapCv{width:100%;height:calc(100vh - 440px);min-height:280px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r);touch-action:none;display:block}
+.mapInfo{font-size:14px;margin:8px 0;min-height:20px}.mapLeg{font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;margin:4px 0}.mapLeg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
 </style>
 
 <style>
@@ -253,6 +255,21 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
 </section>
 
 <!-- ============ LISTA ============ -->
+<section class="view" id="v-map" hidden>
+  <h2>Mapa do sítio amostral</h2>
+  <div id="mapVazio" class="card" hidden>
+    <p style="margin-top:0">Ainda não há KML do sítio amostral neste estudo.</p>
+    <div class="actions"><button class="btn primary big" type="button" data-kmlbtn>Subir KML do sítio amostral</button></div>
+    <p class="hint">Escolha o arquivo .kml (ou .kmz) no celular. Ele fica guardado dentro do app e abre sem internet. Com internet o mapa de fundo não é usado: você vê só o sítio, as trilhas e os pontos já registrados.</p>
+  </div>
+  <div id="mapBox" hidden>
+    <canvas id="mapCv"></canvas>
+    <div class="mapInfo" id="mapInfo">Toque num ponto colorido para ver o registro.</div>
+    <div class="mapLeg"><span><i style="background:#E09B3C"></i>Aves</span><span><i style="background:#C96F2B"></i>Mamíferos</span><span><i style="background:#4F8A2E"></i>Herpetofauna</span><span><i style="background:#2F7DE1"></i>Você</span></div>
+    <div class="actions"><button class="btn primary" type="button" id="mapGPS">Minha posição</button><button class="btn" type="button" id="mapFit">Ver tudo</button><button class="btn" type="button" data-kmlbtn>Trocar KML</button></div>
+  </div>
+</section>
+
 <section class="view" id="v-list" hidden>
   <h2>Registros</h2>
   <div class="row">
@@ -322,6 +339,13 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
     <div class="actions"><button class="btn primary" type="button" id="btnCtx">Usar</button></div>
     <p class="hint">Fica salvo neste aparelho e vai em todo registro novo.</p>
   </div>
+  <h2>Sítio amostral (KML)</h2>
+  <div class="card">
+    <div id="ctxKml" class="hint" style="margin:0 0 8px"></div>
+    <div class="actions"><button class="btn primary" type="button" data-kmlbtn data-ctx="1">Subir KML do sítio amostral</button></div>
+    <p class="hint">Escreva o nome do estudo acima antes de subir. O KML aparece na aba Mapa, junto com os pontos registrados.</p>
+  </div>
+  <input type="file" id="kmlFile" hidden>
   <h2 id="cfgEnvio">Envio para o Google Drive</h2>
   <div class="card">
     <div class="grid">
@@ -334,9 +358,10 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
 </section>
 </div>
 
-<nav class="tabs" role="tablist" style="grid-template-columns:repeat(4,1fr)">
+<nav class="tabs" role="tablist">
   <button role="tab" data-v="v-capa" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 9v12h14V9"/></svg>Início</button>
   <button role="tab" data-v="v-reg" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Registro</button>
+  <button role="tab" data-v="v-map"><svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14"/></svg>Mapa</button>
   <button role="tab" data-v="v-list"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Lista</button>
   <button role="tab" data-v="v-sum"><svg viewBox="0 0 24 24"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18"/></svg>Tabelas</button>
 </nav>
@@ -346,6 +371,7 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
 (function(){
 "use strict";
 const $=id=>document.getElementById(id);
+const APP_VER="2.4";
 
 const GRUPOS={aves:{nome:"Aves",sub:"avifauna"},mamiferos:{nome:"Mamíferos",sub:"mastofauna"},herpetofauna:{nome:"Herpetofauna",sub:"répteis e anfíbios"}};
 const USOS_PADRAO=["Macega","Pastagem","F. florestal","Via de acesso","Área de mineração","Curso hídrico","Café","Eucalipto"];
@@ -418,7 +444,7 @@ function renderCapa(){
   const n=allRecs().length;
   const semEf=ultBackup?semBackup:n;
   $("capaBk").innerHTML=n?(semEf>0?"<b style=\"color:var(--warn)\">"+semEf+" registro(s) sem backup em arquivo.</b>":"<b style=\"color:var(--ok)\">Backup em dia ✓</b>")+(ultBackup?" Último backup: "+esc(ultBackup)+".":" Ainda não foi feito nenhum backup."):"Sem registros ainda.";
-  $("capaCopy").textContent="© "+new Date().getFullYear()+" · @paulapmiranda";}
+  $("capaCopy").textContent="© "+new Date().getFullYear()+" · @paulapmiranda · v"+APP_VER;}
 $("capaEntrar").onclick=()=>show(ctx.estudo?"v-reg":"v-ctx");
 $("capaNovo").onclick=()=>{show("v-ctx");$("c_estudo").value="";setTimeout(()=>$("c_estudo").focus(),100);};
 $("capaBackup").onclick=()=>{if(!allRecs().length){toast("Sem registros para guardar");return;}fazerBackup(false);};
@@ -426,10 +452,10 @@ $("capaShare").onclick=()=>{if(!allRecs().length){toast("Sem registros para envi
 
 /* ---- navegação ---- */
 let current="v-reg";
-function show(v){["v-capa","v-reg","v-list","v-sum","v-ctx"].forEach(id=>$(id).hidden=id!==v);
+function show(v){["v-capa","v-reg","v-map","v-list","v-sum","v-ctx"].forEach(id=>$(id).hidden=id!==v);
   document.querySelector("header.top").hidden=(v==="v-capa");
   document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.v===v?"true":"false"));
-  current=v;if(v==="v-capa")renderCapa();if(v==="v-ctx"){loadCtxForm();loadCfg();}if(v==="v-list")renderList();if(v==="v-sum")renderSum();window.scrollTo(0,0);}
+  current=v;if(v==="v-capa")renderCapa();if(v==="v-ctx"){loadCtxForm();loadCfg();kmlStatus();}if(v==="v-list")renderList();if(v==="v-sum")renderSum();if(v==="v-map")mapaAbrir();window.scrollTo(0,0);}
 document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>show(b.dataset.v));
 
 /* ---- formulário ---- */
@@ -690,6 +716,7 @@ $("btnPacote").onclick=async()=>{
   const k=kmlRegistros(recs,dias);zip.file("Registros_"+pre+".kml",k.kml);
   let nf=0;for(const r of recs.filter(r=>r.temFoto)){const b=await fotoGet(r.id);if(b){zip.file("Fotos/"+fotoNome(r,dias),b);nf++;}}
   zip.file("Relatorio_Fotos.html",relatorioFotos(recs.map(r=>({...r,temFoto:r.temFoto&&true})),dias));
+  {const kt=await kmlGet(ctx.estudo);if(kt)zip.file("Sitio_amostral.kml",kt);}
   zip.file("Estudo_"+pre+".json",JSON.stringify(arquivoEstudo(true)));
   zip.file("LEIA-ME.txt","Pacote do estudo: "+ctx.estudo+"\nGerado em "+new Date().toLocaleString("pt-BR")+"\n\n- Registros_*.csv: planilha para o Excel (separador ponto e vírgula)\n- Registros_*.kml: pontos para Google Earth/QGIS (zona UTM "+(ctx.zona||"24K")+", SIRGAS 2000)\n- Relatorio_Fotos.html: abra no navegador (precisa da pasta Fotos ao lado)\n- Fotos/: fotos nomeadas por dia, espécie e coordenada\n- Estudo_*.json: arquivo do estudo, para abrir no app Estudo de Fauna – Análise\n"+(k.sem?"\nAtenção: "+k.sem+" registro(s) sem coordenada ficaram fora do KML.\n":""));
   const out=await zip.generateAsync({type:"blob"});if(!(await baixar("Pacote_"+pre+".zip",out)))return;
@@ -774,7 +801,89 @@ if(navigator.connection&&navigator.connection.addEventListener)navigator.connect
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)flush(false);});
 setInterval(()=>flush(false),60000);
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
-if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).catch(()=>{});
+
+
+/* ---- mapa do sítio amostral (KML guardado no app, desenhado sem internet) ---- */
+const kmlKey=n=>"kml:"+n;
+let mapaGeo=null,mapaNome=null,gpsPos=null,mapaWatch=null,mv={cx:0,cy:0,sc:1},mapaPts=[];
+function kmlCor(c,d){if(!c||c.length!==8)return d;return "rgb("+parseInt(c.substr(6,2),16)+","+parseInt(c.substr(4,2),16)+","+parseInt(c.substr(2,2),16)+")";}
+function parseKML(txt){
+  const d=new DOMParser().parseFromString(txt,"text/xml");if(d.getElementsByTagName("parsererror").length)return null;
+  const T=(el,t)=>Array.from(el.getElementsByTagName(t));
+  const estilos={};T(d,"Style").forEach(e=>{const id=e.getAttribute("id");if(!id)return;const ls=T(e,"LineStyle")[0];const cor=ls&&T(ls,"color")[0];estilos[id]=cor?cor.textContent.trim():"";});
+  T(d,"StyleMap").forEach(m=>{const id=m.getAttribute("id");T(m,"Pair").forEach(p=>{const k=T(p,"key")[0];if(k&&k.textContent.trim()==="normal"){const u=T(p,"styleUrl")[0];if(u)estilos[id]=estilos[u.textContent.trim().replace("#","")]||"";}});});
+  const coords=el=>{const c=T(el,"coordinates")[0];if(!c)return[];return c.textContent.trim().split(/\s+/).map(x=>x.split(",").map(Number)).filter(a=>a.length>=2&&isFinite(a[0])&&isFinite(a[1])).map(a=>[a[0],a[1]]);};
+  const g={nome:(T(d,"name")[0]||{}).textContent||"",polys:[],lines:[],pts:[]};
+  const dec=a=>{if(a.length<=1500)return a;const k=Math.ceil(a.length/1500);return a.filter((_,i)=>i%k===0||i===a.length-1);};
+  T(d,"Placemark").forEach(pm=>{
+    const nm=((T(pm,"name")[0]||{}).textContent||"").trim();const su=T(pm,"styleUrl")[0];
+    let cor=su?estilos[su.textContent.trim().replace("#","")]:"";const ie=T(pm,"Style")[0];if(!cor&&ie){const c=T(ie,"LineStyle")[0];if(c&&T(c,"color")[0])cor=T(c,"color")[0].textContent.trim();}
+    T(pm,"Polygon").forEach(po=>{const ob=T(po,"outerBoundaryIs")[0]||po;const r=coords(ob);if(r.length>2)g.polys.push({nome:nm,cor:kmlCor(cor,"#2F9E6B"),pts:dec(r)});});
+    T(pm,"LineString").forEach(l=>{const r=coords(l);if(r.length>1)g.lines.push({nome:nm,cor:kmlCor(cor,"#E0B030"),pts:dec(r)});});
+    T(pm,"Point").forEach(p=>{const r=coords(p);if(r[0])g.pts.push({nome:nm,lon:r[0][0],lat:r[0][1]});});
+  });
+  return (g.polys.length||g.lines.length||g.pts.length)?g:null;}
+async function kmlTexto(f){
+  if(/\.kmz$/i.test(f.name)){if(!window.JSZip)throw new Error("zip");const z=await JSZip.loadAsync(await f.arrayBuffer());const n=Object.keys(z.files).find(k=>/\.kml$/i.test(k));if(!n)throw new Error("kml");return await z.files[n].async("string");}
+  return await f.text();}
+let kmlAlvo=null;
+document.querySelectorAll("[data-kmlbtn]").forEach(b=>b.onclick=()=>{
+  if(b.dataset.ctx){const n=$("c_estudo").value.trim();if(!n){toast("Escreva o nome do estudo antes");return;}kmlAlvo=n;}else{if(!ctx.estudo){toast("Escolha o estudo primeiro");return;}kmlAlvo=ctx.estudo;}
+  $("kmlFile").click();});
+$("kmlFile").onchange=async ev=>{const f=ev.target.files[0];ev.target.value="";if(!f)return;
+  try{const t=await kmlTexto(f);const g=parseKML(t);if(!g)throw 0;
+    if(!IDB.db)await IDB.open();const ok=await IDB.put(kmlKey(kmlAlvo),t);if(!ok){memFotos[kmlKey(kmlAlvo)]=t;}
+    mapaNome=null;toast("KML guardado: "+g.polys.length+" área(s), "+g.lines.length+" linha(s), "+g.pts.length+" ponto(s)");kmlStatus();if(current==="v-map")mapaAbrir();}
+  catch(e){toast("Não consegui ler esse arquivo como KML");}};
+async function kmlGet(n){return memFotos[kmlKey(n)]||(IDB.db?await IDB.get(kmlKey(n)):null);}
+async function kmlStatus(){const el=$("ctxKml");if(!el)return;const n=$("c_estudo").value.trim()||ctx.estudo;const t=n?await kmlGet(n):null;el.textContent=t?"✓ KML já guardado para \""+n+"\".":"Nenhum KML guardado para este estudo.";}
+async function mapaAbrir(){
+  if(!ctx.estudo){$("mapVazio").hidden=false;$("mapBox").hidden=true;return;}
+  if(mapaNome!==ctx.estudo){const t=await kmlGet(ctx.estudo);mapaGeo=t?parseKML(t):null;mapaNome=ctx.estudo;mv=null;}
+  $("mapVazio").hidden=!!mapaGeo;$("mapBox").hidden=!mapaGeo;if(!mapaGeo)return;
+  mapaDados();mapaTam();if(!mv)mapaFit();mapaDesenha();}
+const KM=lat=>Math.cos(lat*Math.PI/180);
+function mapaDados(){const z=zonaInfo();mapaPts=[];
+  allRecs().filter(r=>r.estudo===ctx.estudo&&r.utmE&&r.utmN).forEach(r=>{const p=fromUTM(+r.utmE,+r.utmN,z.num,z.south);if(isFinite(p.lat))mapaPts.push({r,lon:p.lon,lat:p.lat});});}
+function mapaLimites(){let a=[];const g=mapaGeo;g.polys.forEach(x=>a=a.concat(x.pts));if(!g.polys.length)g.lines.forEach(x=>a=a.concat(x.pts));g.pts.forEach(x=>a.push([x.lon,x.lat]));mapaPts.forEach(x=>a.push([x.lon,x.lat]));if(gpsPos)a.push([gpsPos.lon,gpsPos.lat]);
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;a.forEach(p=>{x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]);});return {x0,x1,y0,y1};}
+let cv,cx2;
+function mapaTam(){cv=$("mapCv");const r=cv.getBoundingClientRect();const d=window.devicePixelRatio||1;cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);cx2=cv.getContext("2d");cx2.setTransform(d,0,0,d,0,0);cv._w=r.width;cv._h=r.height;}
+function mapaFit(){const b=mapaLimites();const lat0=(b.y0+b.y1)/2,k=KM(lat0);const w=Math.max((b.x1-b.x0)*k,1e-5),h=Math.max(b.y1-b.y0,1e-5);
+  mv={cx:(b.x0+b.x1)/2,cy:(b.y0+b.y1)/2,sc:Math.min(cv._w/w,cv._h/h)*0.9};}
+function P(lon,lat){const k=KM(mv.cy);return [cv._w/2+(lon-mv.cx)*k*mv.sc,cv._h/2-(lat-mv.cy)*mv.sc];}
+function mapaDesenha(){if(!cx2||!mapaGeo||!mv)return;const c=cx2,W=cv._w,H=cv._h;c.clearRect(0,0,W,H);
+  const cs=getComputedStyle(document.body);const ink=cs.color||"#000";
+  mapaGeo.polys.forEach(o=>{c.beginPath();o.pts.forEach((p,i)=>{const q=P(p[0],p[1]);i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]);});c.closePath();c.globalAlpha=.10;c.fillStyle=o.cor;c.fill();c.globalAlpha=1;c.strokeStyle=o.cor;c.lineWidth=2;c.stroke();});
+  mapaGeo.lines.forEach(o=>{c.beginPath();o.pts.forEach((p,i)=>{const q=P(p[0],p[1]);i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]);});c.strokeStyle=o.cor;c.lineWidth=2;c.stroke();});
+  c.font="600 12px sans-serif";c.textBaseline="middle";
+  mapaGeo.pts.forEach(o=>{const q=P(o.lon,o.lat);c.fillStyle="#7A5BD0";c.fillRect(q[0]-5,q[1]-5,10,10);c.fillStyle=ink;c.fillText(o.nome,q[0]+8,q[1]);});
+  const cor={aves:"#E09B3C",mamiferos:"#C96F2B",herpetofauna:"#4F8A2E"};
+  mapaPts.forEach(o=>{const q=P(o.lon,o.lat);o.x=q[0];o.y=q[1];c.beginPath();c.arc(q[0],q[1],7,0,7);c.fillStyle=cor[o.r.grupo]||"#888";c.fill();c.lineWidth=2;c.strokeStyle="#fff";c.stroke();});
+  if(gpsPos){const q=P(gpsPos.lon,gpsPos.lat);const rad=gpsPos.acc/(111320)*mv.sc;if(rad>8){c.beginPath();c.arc(q[0],q[1],rad,0,7);c.globalAlpha=.15;c.fillStyle="#2F7DE1";c.fill();c.globalAlpha=1;}c.beginPath();c.arc(q[0],q[1],8,0,7);c.fillStyle="#2F7DE1";c.fill();c.lineWidth=3;c.strokeStyle="#fff";c.stroke();}
+  // escala
+  const metrosPx=111320/mv.sc;let alvo=metrosPx*90,pot=Math.pow(10,Math.floor(Math.log10(alvo)));const f=alvo/pot;const nice=(f>=5?5:f>=2?2:1)*pot;const len=nice/metrosPx;
+  c.strokeStyle=ink;c.lineWidth=3;c.beginPath();c.moveTo(12,H-14);c.lineTo(12+len,H-14);c.stroke();c.fillStyle=ink;c.font="600 12px sans-serif";c.fillText(nice>=1000?(nice/1000)+" km":nice+" m",12,H-26);}
+(function(){const el=()=>$("mapCv");const ptrs=new Map();let ult=null,d0=0,moveu=false;
+  document.addEventListener("pointerdown",e=>{if(e.target!==el())return;el().setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY]);moveu=false;if(ptrs.size===2){const a=[...ptrs.values()];d0=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);}});
+  document.addEventListener("pointermove",e=>{if(!ptrs.has(e.pointerId)||!mv)return;const old=ptrs.get(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+    if(ptrs.size===1){const dx=e.clientX-old[0],dy=e.clientY-old[1];if(Math.abs(dx)+Math.abs(dy)>0)moveu=moveu||(Math.abs(dx)+Math.abs(dy)>2);const k=KM(mv.cy);mv.cx-=dx/(k*mv.sc);mv.cy+=dy/mv.sc;mapaDesenha();}
+    else if(ptrs.size===2){const a=[...ptrs.values()];const d=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);if(d0>0){mv.sc*=d/d0;moveu=true;mapaDesenha();}d0=d;}});
+  const fim=e=>{if(!ptrs.has(e.pointerId))return;const era=ptrs.size===1&&!moveu;ptrs.delete(e.pointerId);if(era&&e.type==="pointerup")mapaToque(e);};
+  document.addEventListener("pointerup",fim);document.addEventListener("pointercancel",fim);
+  document.addEventListener("wheel",e=>{if(e.target!==el()||!mv)return;e.preventDefault();mv.sc*=e.deltaY<0?1.2:1/1.2;mapaDesenha();},{passive:false});})();
+function mapaToque(e){const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let b=null,bd=26;
+  mapaPts.forEach(o=>{const d=Math.hypot(o.x-x,o.y-y);if(d<bd){bd=d;b=o;}});
+  if(b){const r=b.r;$("mapInfo").innerHTML="<b>"+esc(r.especie||("A identificar – "+(r.nomePopular||"sem nome")))+"</b> · "+esc(r.grupoNome||"")+" · n="+esc(r.n)+"<br><span style=\"color:var(--muted)\">"+esc(fmtDate(r.data))+" "+esc(r.hora||"")+" · "+esc(r.uso||"")+" · "+esc(r.forma||"")+"</span>";return;}
+  let kb=null;bd=26;mapaGeo.pts.forEach(o=>{const q=P(o.lon,o.lat);const d=Math.hypot(q[0]-x,q[1]-y);if(d<bd){bd=d;kb=o;}});
+  $("mapInfo").textContent=kb?kb.nome:"Toque num ponto colorido para ver o registro.";}
+$("mapFit").onclick=()=>{mapaDados();mapaFit();mapaDesenha();};
+$("mapGPS").onclick=()=>{if(!navigator.geolocation){toast("Sem GPS neste navegador");return;}
+  if(mapaWatch!==null){navigator.geolocation.clearWatch(mapaWatch);mapaWatch=null;gpsPos=null;$("mapGPS").textContent="Minha posição";mapaDesenha();return;}
+  $("mapGPS").textContent="Buscando GPS… (toque p/ parar)";
+  mapaWatch=navigator.geolocation.watchPosition(p=>{const primeiro=!gpsPos;gpsPos={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy||20};$("mapGPS").textContent="Parar GPS (±"+Math.round(gpsPos.acc)+" m)";if(primeiro){mv.cx=gpsPos.lon;mv.cy=gpsPos.lat;}mapaDesenha();},err=>{toast("GPS indisponível: dê permissão de localização");mapaWatch=null;$("mapGPS").textContent="Minha posição";},{enableHighAccuracy:true,maximumAge:2000,timeout:30000});};
+window.addEventListener("resize",()=>{if(current==="v-map"&&mapaGeo){mapaTam();mapaDesenha();}});
 
 /* ---- início ---- */
 Object.entries(GRUPOS).forEach(([k,g])=>{const o=document.createElement("option");o.value=k;o.textContent=g.nome;$("qg").appendChild(o);});

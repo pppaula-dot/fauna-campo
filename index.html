@@ -1,0 +1,787 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#23624A"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.png"><link rel="apple-touch-icon" href="icon.png">
+<script src="jszip.min.js"></script>
+<title>Fauna v2 (teste)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#EEF1EA; --surface:#FFFFFF; --surface2:#F6F8F3; --ink:#18201B; --muted:#5B665E; --line:#D3DACD;
+  --accent:#23624A; --accent-ink:#FFFFFF; --accent-soft:#DCEBE2;
+  --warn:#9A6212; --warn-soft:#F6E8CF; --bad:#A23B2C; --bad-soft:#F5DEDA; --ok:#2E7D4F;
+  --sans:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#101512; --surface:#18201B; --surface2:#1D2620; --ink:#E3EAE3; --muted:#9AA79D; --line:#2E3A32;
+  --accent:#6CC39A; --accent-ink:#0D1A13; --accent-soft:#1F3A2D;
+  --warn:#E0A94F; --warn-soft:#3A2E17; --bad:#E38272; --bad-soft:#3D211C; --ok:#6CC39A;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#101512; --surface:#18201B; --surface2:#1D2620; --ink:#E3EAE3; --muted:#9AA79D; --line:#2E3A32;
+  --accent:#6CC39A; --accent-ink:#0D1A13; --accent-soft:#1F3A2D;
+  --warn:#E0A94F; --warn-soft:#3A2E17; --bad:#E38272; --bad-soft:#3D211C; --ok:#6CC39A;
+}
+*{box-sizing:border-box}
+body{margin:0;padding-top:env(safe-area-inset-top,0px)}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.4;padding-inline:16px;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:720px;margin:0 auto}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);margin-inline:-16px;padding:10px 16px 8px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.brand h1{font-size:19px;font-weight:800;font-stretch:80%;letter-spacing:.01em;margin:0;text-transform:uppercase}
+.sync{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
+.ctxbar{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--ink)}
+.chip.missing{color:var(--muted);border-style:dashed}
+button{font:inherit;color:inherit;cursor:pointer}
+.linkbtn{background:none;border:none;color:var(--accent);font-weight:700;font-size:14px;padding:4px 2px;text-decoration:underline;text-underline-offset:3px}
+section.view{padding-block:14px}
+h2{font-size:15px;font-weight:800;font-stretch:85%;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:22px 0 10px}
+h2:first-child{margin-top:4px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.grid.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.full{grid-column:1/-1}
+@media (max-width:420px){.grid.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+label.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+label.f>span{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:10px 10px;width:100%;min-height:46px}
+textarea{min-height:70px;resize:vertical}
+input.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--line);background:var(--surface2);border-radius:8px;padding:9px 12px;font-size:14px;font-weight:600;min-height:42px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (max-width:300px){.groups{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.groups button{border:1px solid var(--line);background:var(--surface2);border-radius:8px;padding:10px 4px;font-size:15px;font-weight:700;line-height:1.15;min-height:64px;overflow-wrap:anywhere}
+.groups button small{display:block;font-weight:500;font-size:11px;color:var(--muted);margin-top:2px}
+.groups button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.groups button[aria-pressed="true"] small{color:var(--accent-ink);opacity:.8}
+.row{display:flex;gap:8px;align-items:end}
+.row>*{flex:1;min-width:0}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;font-weight:700;font-size:15px;min-height:46px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.danger.armed{background:var(--bad);color:#fff}
+.btn.small{min-height:38px;padding:6px 10px;font-size:13px;flex:0 0 auto}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.actions .btn.primary{flex:1 1 180px}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+.bio{border-top:1px dashed var(--line);margin-top:14px;padding-top:12px}
+details.more{margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
+details.more summary{cursor:pointer;font-weight:700;font-size:14px;color:var(--accent);padding:6px 0}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs button{background:none;border:none;padding:10px 4px 12px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px}
+nav.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+nav.tabs button[aria-selected="true"]{color:var(--accent)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 12px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600;z-index:9;max-width:calc(100% - 32px)}
+.list{display:flex;flex-direction:column;gap:8px}
+.rec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;text-align:left;width:100%}
+.rec .sp{font-style:italic;font-weight:600}
+.rec .pop{color:var(--muted);font-size:14px}
+.rec .meta{grid-column:1/-1;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.rec .right{text-align:right;font-family:var(--mono);font-size:13px;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.daylabel{font-family:var(--mono);font-size:12px;color:var(--muted);margin:14px 0 2px;text-transform:uppercase;letter-spacing:.05em}
+.empty{border:1px dashed var(--line);border-radius:var(--r);padding:18px;color:var(--muted);text-align:center;font-size:14px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+th.n{text-align:right}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px}
+.stat b{display:block;font-family:var(--mono);font-size:24px;font-weight:500}
+.stat span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.note{background:var(--warn-soft);color:var(--ink);border-radius:var(--r);padding:12px 14px;font-size:14px}
+.note b{color:var(--warn)}
+.editbanner{background:var(--accent-soft);border-radius:var(--r);padding:10px 12px;font-size:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.pill{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em}
+.pill.pend{background:var(--warn-soft);color:var(--warn)}
+.effort-out{font-family:var(--mono);font-size:14px;background:var(--accent-soft);border-radius:8px;padding:10px 12px}
+textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
+@media (prefers-reduced-motion:no-preference){.toast{transition:opacity .2s}}
+</style>
+
+<style>
+.qty{display:flex;align-items:center;gap:8px}
+.qty button{width:52px;min-height:52px;font-size:24px;font-weight:700;border:1px solid var(--line);background:var(--surface2);border-radius:8px}
+.qty input{text-align:center;font-size:22px;font-family:var(--mono);max-width:90px}
+.seg.big button{min-height:46px;font-size:15px}
+.addUso{display:flex;gap:8px;margin-top:8px}
+.addUso input{min-height:40px}
+.photoRow{display:flex;gap:10px;flex-wrap:wrap}
+.photoRow .btn{flex:1 1 140px;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.photoRow svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
+#fotoPrev{margin-top:12px;display:flex;gap:12px;align-items:center}
+#fotoPrev img{width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.thumb{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.erro{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:12px 14px;font-weight:700;margin-top:14px}
+.campoErro{outline:3px solid var(--bad)!important}
+.dit{display:flex;gap:8px;align-items:stretch}.dit input{flex:1;min-width:0}
+.mic{flex:0 0 52px;border:1px solid var(--line);background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.mic svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+.mic.on{background:var(--bad);color:#fff;border-color:var(--bad)}
+.coordok{color:var(--ok);font-weight:700}
+.cross th:first-child,.cross td:first-child{position:sticky;left:0;background:var(--surface);font-style:italic}
+.cross td.tot,.cross th.tot{font-weight:700}
+</style>
+
+<style>
+/* v2 */
+.sync{display:flex;margin-top:6px;padding:6px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--line);font-size:13px;white-space:normal;color:var(--ink);align-items:center;gap:8px}
+.sync.bad{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+.sync.warn{background:var(--warn-soft)}
+.ctxbar{justify-content:space-between;flex-wrap:nowrap;margin-top:8px;gap:10px}
+.estNome{font-size:20px;font-weight:800;line-height:1.15;overflow-wrap:anywhere}
+.estNome.missing{color:var(--muted)}
+.estSub{font-size:14px;color:var(--muted);margin-top:2px}
+#ctxbar .btn.small{flex:0 0 auto;font-size:14px;min-height:46px;max-width:42%}
+.capa{text-align:center;padding-top:18px}
+.capa img.logo{width:104px;height:104px;border-radius:24px}
+.capaTit{font-size:30px;font-weight:800;font-stretch:80%;text-transform:uppercase;margin:12px 0 0;letter-spacing:.02em}
+.capaSub{margin:2px 0 18px;color:var(--muted);font-size:16px}
+.btn.big{min-height:58px;font-size:18px}
+.studyBtn{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;min-height:56px}
+.studyBtn.atual{border-color:var(--accent);background:var(--accent-soft)}
+.studyBtn b{font-size:17px}.studyBtn small{color:var(--muted);font-size:13px;display:block}
+.copy{margin:26px 0 8px;color:var(--muted);font-size:13px}
+.addUso .dit{flex:1;min-width:0}
+</style>
+</head><body>
+<div class="wrap">
+<header class="top">
+  <div class="brand">
+    <h1>Caderneta de Fauna</h1>
+  </div>
+  <div class="sync" id="syncBar"><span class="dot" id="syncDot"></span><span id="syncText"></span></div>
+  <div class="ctxbar" id="ctxbar"></div>
+</header>
+
+<!-- ============ CAPA ============ -->
+<section class="view capa" id="v-capa" hidden>
+  <img class="logo" src="icon.png" alt="">
+  <h1 class="capaTit">Estudo de Fauna</h1>
+  <p class="capaSub">Levantamento de campo</p>
+  <div class="card" style="text-align:left"><div class="estSub" style="margin:0 0 4px;text-transform:uppercase;font-weight:700;letter-spacing:.05em">Estudo atual</div><div class="estNome" id="capaEst"></div><div class="estSub" id="capaSub"></div></div>
+  <div class="actions"><button class="btn primary big" type="button" id="capaEntrar">Entrar</button></div>
+  <h2 style="text-align:left">Estudos neste celular</h2>
+  <div class="list" id="capaLista"></div>
+  <div class="actions"><button class="btn" type="button" id="capaNovo">+ Novo estudo</button></div>
+  <h2 style="text-align:left">Segurança dos dados</h2>
+  <div class="card" style="text-align:left">
+    <div id="capaBk" style="margin-bottom:6px"></div>
+    <div class="actions" style="margin-top:8px"><button class="btn primary" type="button" id="capaBackup">Salvar backup agora</button><button class="btn" type="button" id="capaShare">Enviar backup</button></div>
+    <p class="hint">O backup é um arquivo salvo na pasta Downloads do celular. "Enviar backup" abre o compartilhar (WhatsApp, e-mail) para guardar uma cópia fora do aparelho quando houver sinal.</p>
+  </div>
+  <p class="copy" id="capaCopy"></p>
+</section>
+
+<!-- ============ REGISTRO ============ -->
+<section class="view" id="v-reg">
+  <div class="editbanner" id="editBanner" hidden>
+    <span>Editando registro</span>
+    <button class="linkbtn" id="cancelEdit" type="button">Cancelar edição</button>
+  </div>
+
+  <h2>Grupo</h2>
+  <div class="groups" id="grupoBtns"></div>
+
+  <h2>Espécie</h2>
+  <div class="card">
+    <div class="grid">
+      <div class="f full"><span style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)">Nome popular ou descrição</span><div class="dit"><input id="r_popular" list="dl_populares" autocomplete="off" placeholder="Ex.: bem-te-vi, perereca verde" aria-label="Nome popular ou descrição"><button type="button" class="mic" data-alvo="r_popular" aria-label="Ditar" hidden><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div></div>
+      <datalist id="dl_populares"></datalist>
+      <div class="f full"><span style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)">Nome científico (se souber)</span><div class="dit"><input id="r_especie" list="dl_especies" autocomplete="off" placeholder="Pode deixar para identificar depois" aria-label="Nome científico"><button type="button" class="mic" data-alvo="r_especie" aria-label="Ditar" hidden><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div></div>
+      <datalist id="dl_especies"></datalist>
+      <p class="hint full" style="margin:0">Sem identificação em campo? Preencha o nome popular ou tire uma foto. O registro fica marcado "a identificar" e você completa depois, na Lista.</p>
+      <div class="f full"><span style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)">Quantidade de indivíduos</span>
+        <div class="qty"><button type="button" id="qMenos" aria-label="Diminuir">−</button><input id="r_n" type="number" inputmode="numeric" min="1" value="1" aria-label="Quantidade"><button type="button" id="qMais" aria-label="Aumentar">+</button></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Uso do solo</h2>
+  <div class="seg big" id="usoSeg"></div>
+  <div class="addUso"><input id="novoUso" autocomplete="off" placeholder="Outro uso (ex.: Seringueira)"><button class="btn small" type="button" id="btnUso">Adicionar</button></div>
+
+  <h2>Forma de registro</h2>
+  <div class="seg big" id="formaSeg"></div>
+
+  <h2>Foto e coordenada</h2>
+  <div class="card">
+    <div class="photoRow">
+      <label class="btn primary" for="fotoCam"><svg viewBox="0 0 24 24"><path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13" r="4"/></svg>Tirar foto</label>
+      <label class="btn" for="fotoGal">Escolher da galeria</label>
+    </div>
+    <input type="file" id="fotoCam" accept="image/*" capture="environment" hidden>
+    <input type="file" id="fotoGal" accept="image/*" hidden>
+    <div id="fotoPrev" hidden><img id="fotoImg" alt="Foto do registro"><div><div id="fotoInfo" class="hint" style="margin:0 0 4px"></div><button class="linkbtn" type="button" id="fotoRem">Remover foto</button></div></div>
+    <div class="actions" style="margin-top:14px"><button class="btn primary" type="button" id="btnGPS" style="flex:1 1 100%"><svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-4px;margin-right:6px"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="8"/></svg>Pegar coordenada do GPS</button></div>
+    <p class="hint" id="gpsInfo"></p>
+    <div class="grid" style="margin-top:10px">
+      <label class="f"><span>UTM E (m)</span><input id="r_utmE" class="mono" inputmode="numeric" autocomplete="off" placeholder="282604"></label>
+      <label class="f"><span>UTM N (m)</span><input id="r_utmN" class="mono" inputmode="numeric" autocomplete="off" placeholder="7706333"></label>
+      <label class="f full"><span>Ou cole a coordenada (lat, long)</span><div class="row"><input id="latlon" class="mono" autocomplete="off" placeholder="-20.7612, -41.2105"><button class="btn small" type="button" id="btnConv" style="min-height:46px">Converter</button></div></label>
+    </div>
+    <p class="hint" id="coordHint">O GPS funciona sem sinal de celular, mas dentro da mata pode demorar ou perder precisão. Se não pegar, digite o ponto do GPS de mão. UTM SIRGAS 2000, zona 24K.</p>
+  </div>
+
+  <h2>Horário e observação</h2>
+  <div class="card" id="maisBox">
+    <div class="grid">
+      <label class="f"><span>Data</span><input id="r_data" type="date"></label>
+      <label class="f"><span>Hora</span><input id="r_hora" type="time" class="mono"></label>
+      <div class="f full"><span style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)">Observação</span><div class="dit"><input id="r_obs" autocomplete="off" placeholder="Ex.: fugiu antes da foto" aria-label="Observação"><button type="button" class="mic" data-alvo="r_obs" aria-label="Ditar" hidden><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div></div>
+    </div>
+    <p class="hint">Data e hora são preenchidas sozinhas.</p>
+  </div>
+
+  <div class="erro" id="erroSalvar" hidden></div>
+  <div class="actions">
+    <button class="btn primary" type="button" id="btnSalvar">Salvar registro</button>
+    <button class="btn danger" type="button" id="btnExcluir" hidden>Excluir</button>
+  </div>
+</section>
+
+<!-- ============ LISTA ============ -->
+<section class="view" id="v-list" hidden>
+  <h2>Registros</h2>
+  <div class="row">
+    <label class="f"><span>Buscar</span><input id="q" autocomplete="off" placeholder="espécie, uso do solo…"></label>
+    <label class="f" style="flex:0 0 40%"><span>Grupo</span><select id="qg"><option value="">Todos</option><option value="__aid">A identificar</option></select></label>
+  </div>
+  <div class="list" id="recList" style="margin-top:10px"></div>
+</section>
+
+<!-- ============ TABELAS ============ -->
+<section class="view" id="v-sum" hidden>
+  <h2>Estudo atual</h2>
+  <div class="stats" id="stats"></div>
+  <h2>Tabelas</h2>
+  <div class="row">
+    <label class="f"><span>Grupo</span><select id="tg"></select></label>
+    <label class="f"><span>Tabela</span><select id="tt"><option value="dia">Abundância por dia</option><option value="uso">Abundância por uso do solo</option></select></label>
+  </div>
+  <div class="tablewrap card" style="padding:0;margin-top:10px"><table class="cross" id="crossTable"></table></div>
+  <p class="hint" id="diasHint"></p>
+
+  <h2>Exportar</h2>
+  <div class="card">
+    <p style="margin:0 0 10px">CSV com ponto e vírgula, abre direto no Excel.</p>
+    <div class="actions" style="margin-top:0">
+      <button class="btn primary big" type="button" id="btnPacote" style="flex:1 1 100%">Gerar pacote do estudo (ZIP)</button>
+    </div>
+    <p class="hint">O pacote reúne num só arquivo: planilha, KML, relatório de fotos, fotos e o arquivo do estudo para o app de análise.</p>
+    <div class="actions" style="margin-top:10px">
+      <button class="btn" type="button" id="btnExpReg">Só a planilha (Excel)</button>
+      <button class="btn" type="button" id="btnExpTab">Esta tabela</button>
+      <button class="btn" type="button" id="btnExpFotos">Fotos (ZIP)</button>
+    </div>
+    <div id="csvFallback" hidden style="margin-top:12px">
+      <p class="hint">O download não está disponível aqui. Copie o conteúdo e cole num arquivo .csv.</p>
+      <textarea class="csv" id="csvText" readonly></textarea>
+      <div class="actions"><button class="btn small" id="btnCopy" type="button">Copiar</button></div>
+    </div>
+  </div>
+  <h2>Envio para o Google Drive</h2>
+  <div class="card">
+    <p style="margin:0" id="envioResumo">—</p>
+    <div class="erro" id="envioAviso" hidden></div>
+    <div class="actions"><button class="btn primary" type="button" id="btnEnviar">Enviar agora</button><button class="btn" type="button" id="btnCfgEnvio">Configurar</button></div>
+    <p class="hint">Em campo tudo fica gravado no celular. No modo recomendado, o envio acontece sozinho quando o celular entra no Wi-Fi. O botão Enviar agora funciona em qualquer conexão e avisa antes de usar dados móveis.</p>
+  </div>
+  <h2>Cópia de segurança</h2>
+  <div class="card">
+    <p style="margin:0 0 4px">Arquivo .json com tudo que está no celular. Não abre no Excel: serve para restaurar os dados neste app, por exemplo ao trocar de celular.</p>
+    <div class="actions"><button class="btn" type="button" id="btnBackup">Baixar cópia de segurança</button><label class="btn" for="restoreFile" style="cursor:pointer">Restaurar cópia</label></div>
+    <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+  </div>
+</section>
+
+<!-- ============ CONTEXTO ============ -->
+<section class="view" id="v-ctx" hidden>
+  <h2>Estudo e campanha</h2>
+  <div class="card">
+    <div class="grid">
+      <label class="f full"><span>Estudo / empreendimento</span><input id="c_estudo" list="dl_estudos" autocomplete="off" placeholder="Ex.: D Costa – Gironda"></label>
+      <datalist id="dl_estudos"></datalist>
+      <label class="f"><span>Campanha</span><select id="c_campanha"><option>1ª campanha</option><option>2ª campanha</option><option>3ª campanha</option><option>4ª campanha</option></select></label>
+      <label class="f"><span>Estação</span><select id="c_estacao"><option>Seca</option><option>Chuvosa</option></select></label>
+      <label class="f"><span>Zona UTM</span><input id="c_zona" class="mono" autocomplete="off" placeholder="24K"></label>
+      <label class="f full"><span>Observador</span><input id="c_coletor" autocomplete="off" placeholder="Seu nome"></label>
+    </div>
+    <div class="actions"><button class="btn primary" type="button" id="btnCtx">Usar</button></div>
+    <p class="hint">Fica salvo neste aparelho e vai em todo registro novo.</p>
+  </div>
+  <h2 id="cfgEnvio">Envio para o Google Drive</h2>
+  <div class="card">
+    <div class="grid">
+      <label class="f full"><span>Endereço da planilha (termina em /exec)</span><input id="s_url" class="mono" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec" style="font-size:13px"></label>
+      <label class="f full"><span>Quando enviar</span><select id="s_modo"><option value="wifi">Automático só no Wi-Fi (recomendado)</option><option value="qualquer">Automático com qualquer internet</option><option value="manual">Só quando eu tocar em "Enviar agora"</option></select></label>
+    </div>
+    <div class="actions"><button class="btn primary" type="button" id="btnSalvarEnvio">Salvar</button><button class="btn" type="button" id="btnTestar">Testar conexão</button></div>
+    <p class="hint" id="testeInfo"></p>
+  </div>
+</section>
+</div>
+
+<nav class="tabs" role="tablist" style="grid-template-columns:repeat(4,1fr)">
+  <button role="tab" data-v="v-capa" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 9v12h14V9"/></svg>Início</button>
+  <button role="tab" data-v="v-reg" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Registro</button>
+  <button role="tab" data-v="v-list"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Lista</button>
+  <button role="tab" data-v="v-sum"><svg viewBox="0 0 24 24"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18"/></svg>Tabelas</button>
+</nav>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+
+const GRUPOS={aves:{nome:"Aves",sub:"avifauna"},mamiferos:{nome:"Mamíferos",sub:"mastofauna"},herpetofauna:{nome:"Herpetofauna",sub:"répteis e anfíbios"}};
+const USOS_PADRAO=["Macega","Pastagem","F. florestal","Via de acesso","Área de mineração","Curso hídrico","Café","Eucalipto"];
+const FORMAS=["Visualização","Registro fotográfico","Vocalização","Vestígio","Armadilha fotográfica"];
+
+const SP={
+aves:"Tyrannus melancholicus|suiriri;Columbina talpacoti|rolinha-roxa;Columbina picui|rolinha-picuí;Columbina squammata|rolinha-fogo-apagou;Sporophila caerulescens|coleirinho;Coragyps atratus|urubu-preto;Cathartes aura|urubu-de-cabeça-vermelha;Cathartes burrovianus|urubu-de-cabeça-amarela;Furnarius rufus|joão-de-barro;Mimus saturninus|sabiá-do-campo;Turdus rufiventris|sabiá-laranjeira;Turdus leucomelas|sabiá-barranco;Milvago chimachima|carrapateiro;Caracara plancus|carcará;Rupornis magnirostris|gavião-carijó;Parabuteo unicinctus|gavião-asa-de-telha;Falco rufigularis|cauré;Falco sparverius|quiriquiri;Stelgidopteryx ruficollis|andorinha-serradora;Pygochelidon cyanoleuca|andorinha-pequena-de-casa;Eupetomena macroura|beija-flor-tesoura;Chlorostilbon lucidus|besourinho-de-bico-vermelho;Troglodytes musculus|corruíra;Patagioenas picazuro|pomba-asa-branca;Leptotila verreauxi|juriti-pupu;Cariama cristata|seriema;Sicalis flaveola|canário-da-terra;Pitangus sulphuratus|bem-te-vi;Megarynchus pitangua|neinei;Myiozetetes similis|bentevizinho-de-penacho-vermelho;Crotophaga ani|anu-preto;Guira guira|anu-branco;Piaya cayana|alma-de-gato;Fluvicola nengeta|lavadeira-mascarada;Arundinicola leucocephala|freirinha;Vanellus chilensis|quero-quero;Cacicus haemorrhous|guaxe;Icterus jamacaii|corrupião;Penelope obscura|jacuguaçu;Bubulcus ibis|garça-vaqueira;Ardea alba|garça-branca-grande;Egretta thula|garça-branca-pequena;Syrigma sibilatrix|maria-faceira;Nannopterum brasilianum|biguá;Jacana jacana|jaçanã;Thraupis palmarum|sanhaço-do-coqueiro;Thraupis sayaca|sanhaço-cinzento;Tangara cayana|saíra-amarela;Coereba flaveola|cambacica;Volatinia jacarina|tiziu;Colaptes campestris|pica-pau-do-campo;Melanerpes candidus|pica-pau-branco;Picumnus cirratus|picapauzinho-barrado;Primolius maracana|maracanã;Forpus xanthopterygius|tuim;Amazona amazonica|curica;Eupsittula aurea|periquito-rei;Psittacara leucophthalmus|periquitão;Nyctidromus albicollis|bacurau;Athene cunicularia|coruja-buraqueira;Glaucidium brasilianum|caburé;Todirostrum cinereum|ferreirinho-relógio;Camptostoma obsoletum|risadinha;Zonotrichia capensis|tico-tico;Estrilda astrild|bico-de-lacre;Passer domesticus|pardal",
+mamiferos:"Nasua nasua|quati;Didelphis aurita|gambá-de-orelha-preta;Tamandua tetradactyla|tamanduá-mirim;Cerdocyon thous|cachorro-do-mato;Procyon cancrivorus|mão-pelada;Callithrix geoffroyi|sagui-da-cara-branca;Callithrix penicillata|sagui-de-tufo-preto;Callithrix flaviceps|sagui-da-serra;Alouatta guariba|bugio;Sapajus nigritus|macaco-prego;Eira barbara|irara;Galictis cuja|furão;Leopardus pardalis|jaguatirica;Leopardus guttulus|gato-do-mato-pequeno;Puma concolor|onça-parda;Herpailurus yagouaroundi|gato-mourisco;Dasypus novemcinctus|tatu-galinha;Euphractus sexcinctus|tatu-peba;Cuniculus paca|paca;Hydrochoerus hydrochaeris|capivara;Guerlinguetus brasiliensis|caxinguelê;Coendou spinosus|ouriço-cacheiro;Bradypus variegatus|preguiça;Philander frenatus|cuíca;Sylvilagus tapetillus|tapiti;Lontra longicaudis|lontra;Canis familiaris|cão doméstico;Felis catus|gato doméstico",
+repteis:"Tropidurus torquatus|calango;Ameiva ameiva|calango-verde;Salvator merianae|teiú;Hemidactylus mabouia|lagartixa-de-parede;Enyalius brasiliensis|lagartinho-da-árvore;Gymnodactylus darwinii|lagartixa-da-mata;Amphisbaena alba|cobra-cega;Bothrops jararaca|jararaca;Bothrops jararacussu|jararacuçu;Chironius bicarinatus|cobra-cipó;Philodryas olfersii|cobra-verde;Philodryas patagoniensis|parelheira;Oxyrhopus petolarius|falsa-coral;Micrurus corallinus|coral-verdadeira;Erythrolamprus miliaris|cobra-d'água;Spilotes pullatus|caninana;Boa constrictor|jiboia;Xenodon neuwiedii|jararaquinha;Hydromedusa maximiliani|cágado-pescoço-de-cobra;Trachemys dorbigni|tigre-d'água;Caiman latirostris|jacaré-de-papo-amarelo",
+anfibios:"Boana raniceps|perereca-de-bananeira;Boana albomarginata|perereca-araponga;Boana faber|sapo-ferreiro;Boana pardalis|perereca-líquen;Dendropsophus elegans|perereca-de-moldura;Dendropsophus minutus|pererequinha;Dendropsophus decipiens|pererequinha;Dendropsophus bipunctatus|pererequinha;Scinax alter|perereca-do-litoral;Scinax x-signatus|perereca-de-banheiro;Scinax fuscovarius|perereca-de-banheiro;Rhinella crucifer|sapo-cururu;Rhinella diptycha|sapo-cururu;Leptodactylus latrans|rã-manteiga;Leptodactylus fuscus|rã-assobiadora;Physalaemus cuvieri|rã-cachorro;Haddadus binotatus|rã-do-folhiço;Ischnocnema guentheri|rãzinha;Proceratophrys boiei|sapo-de-chifres;Phyllomedusa burmeisteri|perereca-macaco"
+};
+const SPMAP={};Object.keys(SP).forEach(g=>{SPMAP[g]=SP[g].split(";").map(s=>{const [c,p]=s.split("|");return {c,p};});});
+SPMAP.herpetofauna=SPMAP.repteis.concat(SPMAP.anfibios);
+
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}};
+let device=LS.get("cf_device",null);if(!device){device="d"+Math.random().toString(36).slice(2,8);LS.set("cf_device",device);}
+let ctx=LS.get("cf2_ctx",{estudo:"",campanha:"1ª campanha",estacao:"Seca",coletor:""});
+let extraUsos=LS.get("cf2_usos",[]);
+let local=LS.get("cf2_local",{});
+let remote={},remoteLoaded=true;
+const saveLocal=()=>LS.set("cf2_local",local);
+/* v2: répteis e anfíbios viram Herpetofauna (registros antigos são convertidos) */
+function normGrupo(r){if(r&&(r.grupo==="repteis"||r.grupo==="anfibios")){r.grupo="herpetofauna";r.grupoNome="Herpetofauna";return true;}return false;}
+(function(){let ch=false;Object.values(local).forEach(e=>{if(normGrupo(e.rec)){e.pending=true;ch=true;}});if(ch)saveLocal();})();
+if(!ctx.zona)ctx.zona="24K";
+
+const nomeTab=r=>r.especie||("A identificar – "+(r.nomePopular||"sem nome"));
+function allRecs(){return Object.values(local).map(e=>({...e.rec,_pending:e.pending})).filter(r=>!r.excluido);}
+const studyRecs=()=>allRecs().filter(r=>r.estudo===ctx.estudo);
+const pendingCount=()=>Object.values(local).filter(e=>e.pending).length;
+
+function opt(sel,arr,val){sel.innerHTML="";arr.forEach(a=>{const o=document.createElement("option");if(Array.isArray(a)){o.value=a[0];o.textContent=a[1];}else{o.value=a;o.textContent=a;}sel.appendChild(o);});if(val!==undefined)sel.value=val;}
+let toastT;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2400);}
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());};
+const nowHM=()=>{const d=new Date();return pad(d.getHours())+":"+pad(d.getMinutes());};
+const fmtDate=s=>s?s.split("-").reverse().join("/"):"";
+function periodoDe(h){if(!h)return "";const [H,M]=h.split(":").map(Number);const t=H+M/60;return (t>=5&&t<12)?"Manhã":(t>=12&&t<18.5)?"Tarde":"Noite";}
+const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+/* ---- contexto ---- */
+function renderCtx(){
+  const b=$("ctxbar");b.innerHTML="";
+  const left=document.createElement("div");
+  const nome=document.createElement("div");nome.className="estNome"+(ctx.estudo?"":" missing");nome.textContent=ctx.estudo||"Escolha o estudo";
+  const sub=document.createElement("div");sub.className="estSub";sub.textContent=ctx.campanha+" · Estação "+ctx.estacao.toLowerCase()+" · Observador: "+(ctx.coletor||"—");
+  left.appendChild(nome);left.appendChild(sub);
+  const bt=document.createElement("button");bt.className="btn small";bt.type="button";bt.textContent="Trocar / novo estudo";bt.onclick=()=>show("v-capa");
+  b.appendChild(left);b.appendChild(bt);
+}
+function loadCtxForm(){$("c_estudo").value=ctx.estudo;$("c_campanha").value=ctx.campanha;$("c_estacao").value=ctx.estacao;$("c_coletor").value=ctx.coletor;$("c_zona").value=ctx.zona||"24K";
+  const dl=$("dl_estudos");dl.innerHTML="";[...new Set(allRecs().map(r=>r.estudo).filter(Boolean))].forEach(e=>{const o=document.createElement("option");o.value=e;dl.appendChild(o);});}
+$("btnCtx").onclick=()=>{const e=$("c_estudo").value.trim();if(!e){toast("Dê um nome ao estudo");return;}
+  ctx={estudo:e,campanha:$("c_campanha").value,estacao:$("c_estacao").value,coletor:$("c_coletor").value.trim(),zona:($("c_zona").value.trim().toUpperCase()||"24K")};LS.set("cf2_ctx",ctx);renderCtx();renderUsos();show("v-reg");toast("Pronto");};
+
+
+/* ---- capa ---- */
+function estudosLista(){const m={};allRecs().forEach(r=>{const e=m[r.estudo]||(m[r.estudo]={nome:r.estudo,n:0,ult:"",campanha:"",estacao:""});e.n++;if((r.data+r.hora)>=e.ult){e.ult=r.data+r.hora;e.campanha=r.campanha;e.estacao=r.estacao;}});
+  if(ctx.estudo&&!m[ctx.estudo])m[ctx.estudo]={nome:ctx.estudo,n:0,ult:"",campanha:ctx.campanha,estacao:ctx.estacao};
+  return Object.values(m).filter(e=>e.nome).sort((a,b)=>b.ult.localeCompare(a.ult));}
+function renderCapa(){
+  $("capaEst").textContent=ctx.estudo||"Nenhum estudo escolhido";$("capaEst").className="estNome"+(ctx.estudo?"":" missing");
+  $("capaSub").textContent=ctx.estudo?(ctx.campanha+" · Estação "+ctx.estacao.toLowerCase()+" · Observador: "+(ctx.coletor||"—")):"Escolha um estudo abaixo ou crie um novo.";
+  const box=$("capaLista");box.innerHTML="";const L=estudosLista();
+  if(!L.length)box.innerHTML="<div class=\"empty\">Nenhum estudo ainda. Toque em \"Novo estudo\".</div>";
+  L.forEach(e=>{const b=document.createElement("button");b.type="button";b.className="studyBtn"+(e.nome===ctx.estudo?" atual":"");
+    b.innerHTML="<div><b>"+esc(e.nome)+"</b><small>"+e.n+" registro(s)"+(e.ult?" · último: "+esc(fmtDate(e.ult.slice(0,10))):"")+"</small></div><span>"+(e.nome===ctx.estudo?"✓ atual":"Abrir")+"</span>";
+    b.onclick=()=>{ctx={...ctx,estudo:e.nome,campanha:e.campanha||ctx.campanha,estacao:e.estacao||ctx.estacao};LS.set("cf2_ctx",ctx);renderCtx();renderUsos();show("v-reg");toast("Estudo: "+e.nome);};box.appendChild(b);});
+  const n=allRecs().length;
+  const semEf=ultBackup?semBackup:n;
+  $("capaBk").innerHTML=n?(semEf>0?"<b style=\"color:var(--warn)\">"+semEf+" registro(s) sem backup em arquivo.</b>":"<b style=\"color:var(--ok)\">Backup em dia ✓</b>")+(ultBackup?" Último backup: "+esc(ultBackup)+".":" Ainda não foi feito nenhum backup."):"Sem registros ainda.";
+  $("capaCopy").textContent="© "+new Date().getFullYear()+" · @paulapmiranda";}
+$("capaEntrar").onclick=()=>show(ctx.estudo?"v-reg":"v-ctx");
+$("capaNovo").onclick=()=>{show("v-ctx");$("c_estudo").value="";setTimeout(()=>$("c_estudo").focus(),100);};
+$("capaBackup").onclick=()=>{if(!allRecs().length){toast("Sem registros para guardar");return;}fazerBackup(false);};
+$("capaShare").onclick=()=>{if(!allRecs().length){toast("Sem registros para enviar");return;}enviarBackup();};
+
+/* ---- navegação ---- */
+let current="v-reg";
+function show(v){["v-capa","v-reg","v-list","v-sum","v-ctx"].forEach(id=>$(id).hidden=id!==v);
+  document.querySelector("header.top").hidden=(v==="v-capa");
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.v===v?"true":"false"));
+  current=v;if(v==="v-capa")renderCapa();if(v==="v-ctx"){loadCtxForm();loadCfg();}if(v==="v-list")renderList();if(v==="v-sum")renderSum();window.scrollTo(0,0);}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>show(b.dataset.v));
+
+/* ---- formulário ---- */
+let grupo=LS.get("cf_grupo","aves");if(grupo==="repteis"||grupo==="anfibios")grupo="herpetofauna";if(!GRUPOS[grupo])grupo="aves";
+let uso=LS.get("cf2_uso","Macega"),formas=["Visualização"],editing=null;
+function renderGrupos(){const box=$("grupoBtns");box.innerHTML="";
+  Object.entries(GRUPOS).forEach(([k,g])=>{const b=document.createElement("button");b.type="button";b.setAttribute("aria-pressed",k===grupo?"true":"false");b.innerHTML=esc(g.nome)+"<small>"+esc(g.sub)+"</small>";b.onclick=()=>setGrupo(k);box.appendChild(b);});}
+function setGrupo(k){grupo=k;LS.set("cf_grupo",k);renderGrupos();
+  const dl=$("dl_especies");dl.innerHTML="";const seen=new Set();
+  allRecs().filter(r=>r.grupo===k).forEach(r=>{if(r.especie&&!seen.has(r.especie)){seen.add(r.especie);const o=document.createElement("option");o.value=r.especie;o.label=r.nomePopular||"";dl.appendChild(o);}});
+  SPMAP[k].forEach(s=>{if(!seen.has(s.c)){seen.add(s.c);const o=document.createElement("option");o.value=s.c;o.label=s.p;dl.appendChild(o);}});
+  const dp=$("dl_populares");dp.innerHTML="";const sp2=new Set();
+  const addP=(pop,cient)=>{if(!pop||sp2.has(pop.toLowerCase()))return;sp2.add(pop.toLowerCase());const o=document.createElement("option");o.value=pop;if(cient)o.label=cient;dp.appendChild(o);};
+  allRecs().filter(r=>r.grupo===k).forEach(r=>addP(r.nomePopular,r.especie));SPMAP[k].forEach(s=>addP(s.p,s.c));}
+function usosList(){const fromRecs=studyRecs().map(r=>r.uso);return [...new Set(USOS_PADRAO.concat(extraUsos,fromRecs).filter(Boolean))];}
+function renderUsos(){const s=$("usoSeg");s.innerHTML="";usosList().forEach(u=>{const b=document.createElement("button");b.type="button";b.textContent=u;b.setAttribute("aria-pressed",u===uso?"true":"false");b.onclick=()=>{uso=u;LS.set("cf2_uso",u);renderUsos();};s.appendChild(b);});}
+$("btnUso").onclick=()=>{const v=$("novoUso").value.trim();if(!v)return;if(!extraUsos.includes(v)){extraUsos.push(v);LS.set("cf2_usos",extraUsos);}uso=v;LS.set("cf2_uso",v);$("novoUso").value="";renderUsos();};
+function renderFormas(){const s=$("formaSeg");s.innerHTML="";FORMAS.forEach(f=>{const b=document.createElement("button");b.type="button";b.textContent=f;b.setAttribute("aria-pressed",formas.includes(f)?"true":"false");
+  b.onclick=()=>{formas=formas.includes(f)?formas.filter(x=>x!==f):formas.concat(f);renderFormas();};s.appendChild(b);});}
+$("qMenos").onclick=()=>{$("r_n").value=Math.max(1,(parseInt($("r_n").value,10)||1)-1);};
+$("qMais").onclick=()=>{$("r_n").value=(parseInt($("r_n").value,10)||0)+1;};
+$("r_popular").addEventListener("change",()=>{const v=$("r_popular").value.trim().toLowerCase();if(!v||$("r_especie").value)return;
+  const prev=allRecs().find(r=>r.grupo===grupo&&(r.nomePopular||"").toLowerCase()===v&&r.especie);const hit=SPMAP[grupo].find(s=>s.p.toLowerCase()===v);
+  const c=(prev&&prev.especie)||(hit&&hit.c);if(c)$("r_especie").value=c;});
+$("r_popular").addEventListener("input",()=>{$("erroSalvar").hidden=true;});
+$("r_especie").addEventListener("change",()=>{const v=$("r_especie").value.trim();if(!v)return;
+  const hit=SPMAP[grupo].find(s=>s.c.toLowerCase()===v.toLowerCase());const prev=allRecs().find(r=>r.especie===v&&r.nomePopular);
+  if(!$("r_popular").value)$("r_popular").value=(prev&&prev.nomePopular)||(hit&&hit.p)||"";});
+
+function toUTM(lat,lon){const a=6378137,f=1/298.257222101,e2=f*(2-f),k0=0.9996,ep2=e2/(1-e2),r=Math.PI/180;
+  const zone=Math.floor((lon+180)/6)+1,lon0=((zone-1)*6-180+3)*r,p=lat*r,l=lon*r;
+  const N=a/Math.sqrt(1-e2*Math.sin(p)**2),T=Math.tan(p)**2,C=ep2*Math.cos(p)**2,A=Math.cos(p)*(l-lon0);
+  const M=a*((1-e2/4-3*e2*e2/64-5*e2**3/256)*p-(3*e2/8+3*e2*e2/32+45*e2**3/1024)*Math.sin(2*p)+(15*e2*e2/256+45*e2**3/1024)*Math.sin(4*p)-(35*e2**3/3072)*Math.sin(6*p));
+  const E=k0*N*(A+(1-T+C)*A**3/6+(5-18*T+T*T+72*C-58*ep2)*A**5/120)+500000;
+  let Nn=k0*(M+N*Math.tan(p)*(A*A/2+(5-T+9*C+4*C*C)*A**4/24+(61-58*T+T*T+600*C-330*ep2)*A**6/720));if(lat<0)Nn+=10000000;
+  return {zona:zone+("CDEFGHJKLMNPQRSTUVWXX"[Math.floor((lat+80)/8)]||""),E:Math.round(E),N:Math.round(Nn)};}
+$("btnConv").onclick=()=>{const m=$("latlon").value.replace(/;/g,",").match(/(-?\d+(?:[.]\d+)?)\s*[, ]\s*(-?\d+(?:[.]\d+)?)/);
+  if(!m){toast("Use o formato -20.7612, -41.2105");return;}const u=toUTM(parseFloat(m[1]),parseFloat(m[2]));$("r_utmE").value=u.E;$("r_utmN").value=u.N;toast("UTM "+u.zona+" "+u.E+" / "+u.N);};
+
+/* ---- foto (câmera via arquivo) + GPS do EXIF ---- */
+let foto=null; // {blob,url,existingId}
+const IDB={db:null,open(){return new Promise(res=>{try{const r=indexedDB.open("cf_fotos",1);r.onupgradeneeded=()=>r.result.createObjectStore("f");r.onsuccess=()=>{IDB.db=r.result;res(true);};r.onerror=()=>res(false);}catch(e){res(false);}});},
+  put(k,v){return new Promise(res=>{try{const t=IDB.db.transaction("f","readwrite");t.objectStore("f").put(v,k);t.oncomplete=()=>res(true);t.onerror=()=>res(false);}catch(e){res(false);}});},
+  get(k){return new Promise(res=>{try{const q=IDB.db.transaction("f").objectStore("f").get(k);q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null);}catch(e){res(null);}});},
+  del(k){try{IDB.db.transaction("f","readwrite").objectStore("f").delete(k);}catch(e){}}};
+const memFotos={};
+async function fotoPut(k,b){memFotos[k]=b;if(IDB.db)await IDB.put(k,b);}
+async function fotoGet(k){return memFotos[k]||(IDB.db?await IDB.get(k):null);}
+function exifGPS(buf){
+  try{const v=new DataView(buf);if(v.getUint16(0)!==0xFFD8)return null;let o=2;
+    while(o<v.byteLength-4){const m=v.getUint16(o);const len=v.getUint16(o+2);
+      if(m===0xFFE1&&v.getUint32(o+4)===0x45786966){const t=o+10;const le=v.getUint16(t)===0x4949;
+        const u16=p=>v.getUint16(p,le),u32=p=>v.getUint32(p,le);
+        const ifd0=t+u32(t+4);let gps=0;const n=u16(ifd0);
+        for(let i=0;i<n;i++){const e=ifd0+2+i*12;if(u16(e)===0x8825)gps=t+u32(e+8);}
+        if(!gps)return null;const g={};const gn=u16(gps);
+        for(let i=0;i<gn;i++){const e=gps+2+i*12,tag=u16(e);
+          if(tag===1||tag===3)g[tag]=String.fromCharCode(v.getUint8(e+8));
+          if(tag===2||tag===4){const p=t+u32(e+8);const r=k=>u32(p+k*8)/u32(p+k*8+4);g[tag]=r(0)+r(1)/60+r(2)/3600;}}
+        if(g[2]===undefined||g[4]===undefined)return null;
+        return {lat:g[2]*(g[1]==="S"?-1:1),lon:g[4]*(g[3]==="W"?-1:1)};}
+      if((m&0xFF00)!==0xFF00)break;o+=2+len;}
+  }catch(e){}return null;}
+function compress(file){return new Promise(res=>{const url=URL.createObjectURL(file);const img=new Image();
+  img.onload=()=>{const max=1600,sc=Math.min(1,max/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);c.toBlob(b=>res(b||file),"image/jpeg",0.8);};
+  img.onerror=()=>{URL.revokeObjectURL(url);res(file);};img.src=url;});}
+async function onFoto(ev){const file=ev.target.files&&ev.target.files[0];ev.target.value="";if(!file)return;
+  let gps=null;try{gps=exifGPS(await file.arrayBuffer());}catch(e){}
+  const blob=await compress(file);if(foto&&foto.url&&foto.blob)URL.revokeObjectURL(foto.url);
+  foto={blob,url:URL.createObjectURL(blob)};showFoto();if(!formas.includes("Registro fotográfico")){formas.push("Registro fotográfico");renderFormas();}
+  if(gps){const u=toUTM(gps.lat,gps.lon);$("r_utmE").value=u.E;$("r_utmN").value=u.N;$("fotoInfo").innerHTML="<span class=\"coordok\">Coordenada lida da foto</span><br>UTM "+u.E+" / "+u.N;}
+  else $("fotoInfo").textContent=$("r_utmE").value?"Foto anexada.":"Foto anexada. Use o botão do GPS abaixo para a coordenada.";}
+function showFoto(){if(foto){$("fotoImg").src=foto.url;$("fotoPrev").hidden=false;}else{$("fotoPrev").hidden=true;$("fotoImg").removeAttribute("src");$("fotoInfo").textContent="";}}
+$("fotoCam").onchange=onFoto;$("fotoGal").onchange=onFoto;
+$("fotoRem").onclick=()=>{foto=null;showFoto();};
+
+let gpsWatch=null,gpsTimer=null;
+function stopGPS(){if(gpsWatch!==null){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;}clearTimeout(gpsTimer);$("btnGPS").disabled=false;$("btnGPS").lastChild.textContent="Pegar coordenada do GPS";}
+$("btnGPS").onclick=()=>{
+  if(!navigator.geolocation){$("gpsInfo").textContent="Este navegador não dá acesso ao GPS. Digite a coordenada.";return;}
+  if(gpsWatch!==null){stopGPS();return;}
+  let best=null;$("gpsInfo").textContent="Procurando satélites…";$("btnGPS").lastChild.textContent="Parar busca";
+  gpsWatch=navigator.geolocation.watchPosition(pos=>{const c=pos.coords;
+      if(!best||c.accuracy<best.accuracy){best=c;const u=toUTM(c.latitude,c.longitude);$("r_utmE").value=u.E;$("r_utmN").value=u.N;
+        $("gpsInfo").innerHTML="<span class=\"coordok\">UTM "+u.E+" / "+u.N+"</span> · precisão ±"+Math.round(c.accuracy)+" m"+(c.accuracy>20?" (melhorando…)":"");}
+      if(c.accuracy<=10){stopGPS();$("gpsInfo").innerHTML+=" ✓";}},
+    err=>{stopGPS();$("gpsInfo").textContent=err.code===1?"Permita o acesso à localização para o Chrome nas configurações do celular.":"Não foi possível pegar o GPS agora. Tente em área mais aberta ou digite a coordenada.";},
+    {enableHighAccuracy:true,maximumAge:0,timeout:60000});
+  gpsTimer=setTimeout(()=>{stopGPS();if(best)$("gpsInfo").innerHTML+=" · busca encerrada";},45000);
+};
+
+function falha(msg,el){const e=$("erroSalvar");e.textContent=msg;e.hidden=false;toast(msg);
+  el.classList.add("campoErro");el.scrollIntoView({behavior:"smooth",block:"center"});if(el.focus)setTimeout(()=>el.focus({preventScroll:true}),400);
+  setTimeout(()=>el.classList.remove("campoErro"),3500);}
+$("r_especie").addEventListener("input",()=>{$("erroSalvar").hidden=true;});
+/* ---- ditado por voz ---- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,micAtivo=null;
+const MICSVG='<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+["c_estudo","c_coletor","novoUso","q"].forEach(id=>{const inp=$(id);if(!inp||inp.closest(".dit"))return;const w=document.createElement("div");w.className="dit";inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
+  const b=document.createElement("button");b.type="button";b.className="mic";b.dataset.alvo=id;b.setAttribute("aria-label","Ditar");b.hidden=true;b.innerHTML=MICSVG;w.appendChild(b);});
+if(SR&&!LS.get("cf3_semmic",0)){document.querySelectorAll(".mic").forEach(b=>{b.hidden=false;b.onclick=()=>ditar(b);});}
+function ditar(btn){
+  if(rec){rec.stop();return;}
+  const alvo=$(btn.dataset.alvo);rec=new SR();rec.lang="pt-BR";rec.interimResults=true;rec.maxAlternatives=1;
+  const base=alvo.value?alvo.value.trim()+" ":"";btn.classList.add("on");micAtivo=btn;
+  rec.onresult=ev=>{let t="";for(const r of ev.results)t+=r[0].transcript;
+    if(btn.dataset.alvo==="r_especie"){t=t.trim().toLowerCase();t=t.charAt(0).toUpperCase()+t.slice(1);}
+    alvo.value=base+t;alvo.dispatchEvent(new Event("input"));};
+  rec.onerror=ev=>{if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){LS.set("cf3_semmic",1);document.querySelectorAll(".mic").forEach(b=>b.hidden=true);toast("Microfone do app indisponível aqui. Use o microfone do teclado.");return;}toast(ev.error==="not-allowed"?"Permita o microfone para o Chrome":(ev.error==="network"?"Ditado precisa de internet neste celular. Use o microfone do teclado.":"Não entendi, tente de novo"));};
+  rec.onend=()=>{btn.classList.remove("on");rec=null;micAtivo=null;alvo.dispatchEvent(new Event("change"));};
+  try{rec.start();}catch(e){btn.classList.remove("on");rec=null;}
+}
+
+function resetForm(){stopGPS();formas=formas.filter(f=>f!=="Registro fotográfico");if(!formas.length)formas=["Visualização"];renderFormas();$("gpsInfo").textContent="";foto=null;showFoto();$("r_utmE").value="";$("r_utmN").value="";$("latlon").value="";$("r_especie").value="";$("r_popular").value="";$("r_n").value=1;$("r_obs").value="";$("r_data").value=today();$("r_hora").value=nowHM();}
+function startEdit(r){editing=r;setGrupo(r.grupo);$("r_especie").value=r.especie;$("r_popular").value=r.nomePopular||"";$("r_n").value=r.n;
+  uso=r.uso;renderUsos();formas=(r.forma||"").split(" / ").filter(Boolean);renderFormas();
+  $("r_data").value=r.data;$("r_hora").value=r.hora;$("r_utmE").value=r.utmE||"";$("r_utmN").value=r.utmN||"";$("r_obs").value=r.obs||"";
+  foto=null;showFoto();if(r.temFoto){fotoGet(r.id).then(b=>{if(b&&editing&&editing.id===r.id){foto={blob:b,url:URL.createObjectURL(b),existing:true};showFoto();$("fotoInfo").textContent="";}});}
+  $("editBanner").hidden=false;$("btnExcluir").hidden=false;disarm();$("btnSalvar").textContent="Salvar alterações";show("v-reg");}
+function endEdit(){editing=null;$("editBanner").hidden=true;$("btnExcluir").hidden=true;$("btnSalvar").textContent="Salvar registro";resetForm();}
+$("cancelEdit").onclick=endEdit;
+
+$("btnSalvar").onclick=()=>{
+  if(!ctx.estudo){show("v-ctx");toast("Informe o estudo primeiro");return;}
+  const esp=$("r_especie").value.trim(),popIn=$("r_popular").value.trim();
+  if(!esp&&!popIn&&!foto){falha("Escreva um nome popular ou descrição, ou tire uma foto. O registro ainda não foi salvo.",$("r_popular"));return;}
+  if(!formas.length){falha("Marque a forma de registro. O registro ainda não foi salvo.",$("formaSeg"));return;}
+  $("erroSalvar").hidden=true;
+  const data=$("r_data").value||today(),hora=$("r_hora").value||nowHM();
+  const f={estudo:editing?editing.estudo:ctx.estudo,campanha:editing?editing.campanha:ctx.campanha,estacao:editing?editing.estacao:ctx.estacao,
+    data,hora,periodo:periodoDe(hora),grupo,grupoNome:GRUPOS[grupo].nome,especie:esp,nomePopular:popIn,aIdentificar:!esp,
+    n:Math.max(1,parseInt($("r_n").value,10)||1),uso,forma:formas.join(" / "),
+    utmE:$("r_utmE").value.replace(/\D/g,""),utmN:$("r_utmN").value.replace(/\D/g,""),obs:$("r_obs").value.trim(),
+    observador:editing?editing.observador:ctx.coletor};
+  const rec=editing?{...editing,...f,editadoEm:new Date().toISOString()}:{...f,id:newId(),bundle:device+"_"+data.replace(/-/g,""),criadoEm:new Date().toISOString(),editadoEm:"",excluido:false};
+  delete rec._pending;
+  if(foto&&foto.blob&&!foto.existing){fotoPut(rec.id,foto.blob);rec.fotoLink="";rec.fotoEnviada=false;}
+  if(!foto){rec.fotoLink="";rec.fotoEnviada=false;}
+  if(!foto&&rec.temFoto)IDB.del(rec.id);
+  rec.temFoto=!!foto;
+  local[rec.id]={rec,pending:true};saveLocal();
+  semBackup++;LS.set("cf3_sem",semBackup);
+  const was=!!editing;if(was)endEdit();else resetForm();
+  refreshAll();toast(was?"Alterações salvas ✓":"✓ Salvo: "+f.n+" × "+(esp||popIn||"a identificar"));flush();
+  if(semBackup>=10)setTimeout(()=>fazerBackup(true),600);window.scrollTo({top:0,behavior:"smooth"});
+};
+let armT;function disarm(){const b=$("btnExcluir");b.classList.remove("armed");b.textContent="Excluir";}
+$("btnExcluir").onclick=()=>{const b=$("btnExcluir");
+  if(!b.classList.contains("armed")){b.classList.add("armed");b.textContent="Toque de novo para excluir";clearTimeout(armT);armT=setTimeout(disarm,4000);return;}
+  const rec={...editing,excluido:true,editadoEm:new Date().toISOString()};delete rec._pending;local[rec.id]={rec,pending:true};saveLocal();IDB.del(rec.id);endEdit();refreshAll();toast("Registro excluído");flush();show("v-list");};
+
+/* ---- lista ---- */
+function renderList(){
+  const q=$("q").value.trim().toLowerCase(),g=$("qg").value;
+  let rows=allRecs().filter(r=>!g||(g==="__aid"?!r.especie:r.grupo===g));
+  if(q)rows=rows.filter(r=>[r.especie,r.nomePopular,r.uso,r.forma,r.observador,r.estudo,r.campanha].join(" ").toLowerCase().includes(q));
+  rows.sort((a,b)=>(b.data+b.hora+b.criadoEm).localeCompare(a.data+a.hora+a.criadoEm));
+  const box=$("recList");box.innerHTML="";
+  if(!rows.length){box.innerHTML="<div class=\"empty\">"+(q||g?"Nenhum registro com esse filtro.":"Nenhum registro ainda. O que você salvar aparece aqui, do mais recente para o mais antigo.")+"</div>";return;}
+  let last="";
+  rows.slice(0,500).forEach(r=>{
+    const key=r.data+r.estudo;if(key!==last){last=key;const d=document.createElement("div");d.className="daylabel";d.textContent=fmtDate(r.data)+" · "+r.estudo+" · "+r.campanha;box.appendChild(d);}
+    const b=document.createElement("button");b.type="button";b.className="rec";
+    const th=r.temFoto?"<img class=\"thumb\" alt=\"\" data-fid=\""+esc(r.id)+"\">":"";
+    b.style.gridTemplateColumns=th?"auto 1fr auto":"";
+    b.innerHTML=(th?"<div>"+th+"</div>":"")+"<div><div class=\"sp\""+(r.especie?"":" style=\"font-style:normal\"")+">"+esc(r.especie||r.nomePopular||"Sem nome")+"</div><div class=\"pop\">"+esc(r.especie?(r.nomePopular||"—"):"toque para identificar")+"</div></div><div class=\"right\"><span>"+esc(r.hora)+"</span><span>n="+esc(r.n)+"</span>"+(r.especie?"":"<span class=\"pill pend\">a identificar</span>")+(cfg.url&&r._pending?"<span class=\"pill\" style=\"background:var(--surface2);color:var(--muted)\">a enviar</span>":"")+"</div><div class=\"meta\">"+esc([r.grupoNome,r.uso,r.forma,(r.utmE?("UTM "+r.utmE+"/"+r.utmN):""),r.observador].filter(Boolean).join(" · "))+"</div>";
+    b.onclick=()=>startEdit(r);box.appendChild(b);});
+  box.querySelectorAll("img[data-fid]").forEach(async img=>{const bl=await fotoGet(img.dataset.fid);if(bl)img.src=URL.createObjectURL(bl);});
+}
+$("q").addEventListener("input",renderList);$("qg").onchange=renderList;
+
+/* ---- tabelas (formato do estudo: por dia e por uso do solo) ---- */
+function crossData(){
+  const g=$("tg").value,type=$("tt").value;const recs=studyRecs();
+  const dias=[...new Set(recs.map(r=>r.data))].sort();
+  const rs=recs.filter(r=>r.grupo===g);
+  const cols=type==="dia"?dias:[...new Set(rs.map(r=>r.uso))].sort((a,b)=>usosList().indexOf(a)-usosList().indexOf(b));
+  const colLbl=type==="dia"?dias.map((d,i)=>"DIA "+(i+1)):cols;
+  const sp={};
+  rs.forEach(r=>{const k=nomeTab(r);if(!sp[k])sp[k]={especie:k,pop:r.nomePopular,first:r.data,v:{}};if(r.data<sp[k].first)sp[k].first=r.data;if(!sp[k].pop&&r.nomePopular)sp[k].pop=r.nomePopular;
+    const c=type==="dia"?r.data:r.uso;sp[k].v[c]=(sp[k].v[c]||0)+(+r.n||0);});
+  const rows=Object.values(sp).sort((a,b)=>a.first.localeCompare(b.first)||a.especie.localeCompare(b.especie));
+  return {dias,cols,colLbl,rows,type};
+}
+function renderSum(){
+  const recs=studyRecs();const dias=[...new Set(recs.map(r=>r.data))].sort();
+  $("stats").innerHTML="<div class=\"stat\"><b>"+new Set(recs.filter(r=>r.especie).map(r=>r.grupo+r.especie)).size+"</b><span>espécies"+(recs.some(r=>!r.especie)?" · "+recs.filter(r=>!r.especie).length+" a identificar":"")+"</span></div><div class=\"stat\"><b>"+recs.reduce((s,r)=>s+(+r.n||0),0)+"</b><span>indivíduos</span></div><div class=\"stat\"><b>"+dias.length+"</b><span>dias de campo</span></div>";
+  const d=crossData(),t=$("crossTable");
+  if(!d.rows.length){t.innerHTML="<tr><td class=\"empty\" style=\"border:none;font-style:normal\">Sem registros deste grupo em "+esc(ctx.estudo||"nenhum estudo")+".</td></tr>";$("diasHint").textContent="";return;}
+  const head="<tr><th>Espécie</th><th>Nome popular</th>"+(d.type==="dia"?"<th>1º registro</th>":"")+d.colLbl.map(c=>"<th class=\"n\">"+esc(c)+"</th>").join("")+"<th class=\"n tot\">Total</th></tr>";
+  const tot={};let grand=0;
+  const body=d.rows.map(r=>{let s=0;const cells=d.cols.map(c=>{const v=r.v[c]||0;s+=v;tot[c]=(tot[c]||0)+v;return "<td class=\"n\">"+v+"</td>";}).join("");grand+=s;
+    return "<tr><td>"+esc(r.especie)+"</td><td>"+esc(r.pop)+"</td>"+(d.type==="dia"?"<td>"+esc(fmtDate(r.first))+"</td>":"")+cells+"<td class=\"n tot\">"+s+"</td></tr>";}).join("");
+  const foot="<tr><th>Total</th><th></th>"+(d.type==="dia"?"<th></th>":"")+d.cols.map(c=>"<th class=\"n\">"+(tot[c]||0)+"</th>").join("")+"<th class=\"n tot\">"+grand+"</th></tr>";
+  t.innerHTML=head+body+foot;
+  $("diasHint").textContent=d.type==="dia"?"Dias: "+d.dias.map((x,i)=>"DIA "+(i+1)+" = "+fmtDate(x)).join(" · "):"";
+}
+$("tg").onchange=renderSum;$("tt").onchange=renderSum;
+
+/* ---- exportação ---- */
+function csv(header,rows){const cell=v=>{v=v===undefined||v===null?"":String(v);return /[;"\n]/.test(v)?"\""+v.replace(/"/g,"\"\"")+"\"":v;};
+  return "﻿"+[header].concat(rows).map(r=>r.map(cell).join(";")).join("\r\n");}
+async function baixar(nome,blob){
+  try{if(window.claude&&window.claude.use){const d=await window.claude.use("downloads");
+    if(d){try{await d.save({filename:nome,data:blob});return true;}catch(e){if(e&&e.code==="declined"){toast("Você cancelou o salvamento");return false;}if(e&&e.code==="rate_limited"){toast("Aguarde um instante e tente de novo");return false;}}}}}catch(e){}
+  try{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);return true;}catch(e){return false;}}
+async function offer(nome,text){if(await baixar(nome,new Blob([text],{type:"text/csv;charset=utf-8"})))toast("Arquivo salvo ✓");}
+function fotoNome(r,dias){return ["DIA"+(dias.indexOf(r.data)+1),(r.especie||("AIDENT_"+(r.nomePopular||"sem_nome"))).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\w]+/g,"_"),r.data.replace(/-/g,""),r.hora.replace(":",""),r.utmE?("E"+r.utmE+"_N"+r.utmN):""].filter(Boolean).join("_")+".jpg";}
+const slug=s=>(s||"estudo").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w]+/g,"-").slice(0,40);
+function csvRegistros(recs,dias){return csv(["Estudo","Campanha","Estação","Dia","Data","Hora","Período","Grupo","Espécie","Nome popular","Situação","Nº indivíduos","Uso do solo","Forma de registro","UTM E","UTM N","Foto","Observador","Observação","ID"],
+    recs.map(r=>[r.estudo,r.campanha,r.estacao,"DIA "+(dias.indexOf(r.data)+1),fmtDate(r.data),r.hora,r.periodo,r.grupoNome,r.especie,r.nomePopular,r.especie?"Identificada":"A identificar",r.n,r.uso,r.forma,r.utmE,r.utmN,r.temFoto?fotoNome(r,dias):"",r.observador,r.obs,r.id]));}
+$("btnExpReg").onclick=()=>{
+  const recs=studyRecs().sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));if(!recs.length){toast("Nada para exportar");return;}
+  const dias=[...new Set(recs.map(r=>r.data))].sort();
+  offer("fauna_registros_"+slug(ctx.estudo)+"_"+today()+".csv",csvRegistros(recs,dias));};
+$("btnExpTab").onclick=()=>{const d=crossData();if(!d.rows.length){toast("Tabela vazia");return;}
+  const header=["Nome científico","Nome popular"].concat(d.type==="dia"?["Dia do 1º registro"]:[],d.colLbl,["Abundância"]);
+  const rows=d.rows.map(r=>{const vals=d.cols.map(c=>r.v[c]||0);return [r.especie,r.pop].concat(d.type==="dia"?[fmtDate(r.first)]:[],vals,[vals.reduce((a,b)=>a+b,0)]);});
+  offer("fauna_"+$("tg").value+"_por_"+d.type+"_"+slug(ctx.estudo)+".csv",csv(header,rows));};
+
+/* ---- pacote do estudo: planilha + KML + relatório de fotos + fotos + arquivo do estudo ---- */
+function fromUTM(E,N,zoneNum,south){const a=6378137,f=1/298.257222101,e2=f*(2-f),k0=0.9996,ep2=e2/(1-e2);
+  const x=E-500000,y=south?N-10000000:N,M=y/k0,mu=M/(a*(1-e2/4-3*e2*e2/64-5*e2**3/256));
+  const e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
+  const p1=mu+(3*e1/2-27*e1**3/32)*Math.sin(2*mu)+(21*e1*e1/16-55*e1**4/32)*Math.sin(4*mu)+(151*e1**3/96)*Math.sin(6*mu)+(1097*e1**4/512)*Math.sin(8*mu);
+  const sp=Math.sin(p1),cp=Math.cos(p1),tp=Math.tan(p1),N1=a/Math.sqrt(1-e2*sp*sp),T1=tp*tp,C1=ep2*cp*cp,R1=a*(1-e2)/Math.pow(1-e2*sp*sp,1.5),D=x/(N1*k0);
+  const lat=p1-(N1*tp/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1-9*ep2)*D**4/24+(61+90*T1+298*C1+45*T1*T1-252*ep2-3*C1*C1)*D**6/720);
+  const lon0=((zoneNum-1)*6-180+3)*Math.PI/180;
+  const lon=lon0+(D-(1+2*T1+C1)*D**3/6+(5-2*C1+28*T1-3*C1*C1+8*ep2+24*T1*T1)*D**5/120)/cp;
+  return {lat:lat*180/Math.PI,lon:lon*180/Math.PI};}
+function zonaInfo(){const z=(ctx.zona||"24K").toUpperCase().trim();const num=parseInt(z,10)||24;const letra=z.replace(/[0-9]/g,"").charAt(0)||"K";return {num,south:letra<"N"};}
+function kmlRegistros(recs,dias){
+  const z=zonaInfo(),cores={aves:"ff3c9be0",mamiferos:"ff2b6fc9",herpetofauna:"ff4f8a2e"};let sem=0;
+  let k='<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+esc(ctx.estudo)+' – registros de fauna</name>\n';
+  Object.keys(GRUPOS).forEach(g=>{k+='<Style id="s_'+g+'"><IconStyle><color>'+cores[g]+'</color><scale>1.1</scale><Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon></IconStyle><LabelStyle><scale>0.8</scale></LabelStyle></Style>\n';});
+  Object.keys(GRUPOS).forEach(g=>{const rs=recs.filter(r=>r.grupo===g);if(!rs.length)return;
+    k+='<Folder><name>'+esc(GRUPOS[g].nome)+'</name>\n';
+    rs.forEach(r=>{if(!r.utmE||!r.utmN){sem++;return;}const p=fromUTM(+r.utmE,+r.utmN,z.num,z.south);
+      const nm=r.especie||("A identificar – "+(r.nomePopular||"sem nome"));
+      k+='<Placemark><name>'+esc(nm)+'</name><styleUrl>#s_'+g+'</styleUrl><description>'+esc("DIA "+(dias.indexOf(r.data)+1)+" · "+fmtDate(r.data)+" "+r.hora+" · n="+r.n+" · "+r.uso+" · "+r.forma+(r.nomePopular?" · "+r.nomePopular:"")+(r.obs?" · "+r.obs:"")+" · UTM "+r.utmE+"/"+r.utmN+" ("+(ctx.zona||"24K")+")")+'</description>'
+        +'<ExtendedData><Data name="Grupo"><value>'+esc(r.grupoNome)+'</value></Data><Data name="Data"><value>'+esc(fmtDate(r.data))+'</value></Data><Data name="Nº indivíduos"><value>'+esc(r.n)+'</value></Data><Data name="Uso do solo"><value>'+esc(r.uso)+'</value></Data><Data name="UTM E"><value>'+esc(r.utmE)+'</value></Data><Data name="UTM N"><value>'+esc(r.utmN)+'</value></Data></ExtendedData>'
+        +'<Point><coordinates>'+p.lon.toFixed(7)+','+p.lat.toFixed(7)+',0</coordinates></Point></Placemark>\n';});
+    k+='</Folder>\n';});
+  return {kml:k+'</Document></kml>',sem};}
+function relatorioFotos(recs,dias){
+  const comFoto=recs.filter(r=>r.temFoto);
+  let s='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório de fotos – '+esc(ctx.estudo)+'</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#18201B}h1{color:#23624A;font-size:22px}.f{display:inline-block;width:46%;vertical-align:top;margin:0 1.5% 18px;border:1px solid #cfd8cf;border-radius:8px;padding:10px;break-inside:avoid}.f img{width:100%;border-radius:6px}.f b{font-style:italic}.m{font-size:12px;color:#555}@media print{.f{width:48%}}</style></head><body>';
+  s+='<h1>Relatório de fotos – '+esc(ctx.estudo)+'</h1><p>'+esc(ctx.campanha)+' · '+esc(ctx.estacao)+' · Observador: '+esc(ctx.coletor||"—")+' · '+comFoto.length+' foto(s)</p>';
+  comFoto.forEach((r,i)=>{s+='<div class="f"><img src="Fotos/'+esc(fotoNome(r,dias))+'" alt=""><div><b>'+esc(r.especie||("A identificar – "+(r.nomePopular||"sem nome")))+'</b>'+(r.nomePopular&&r.especie?' ('+esc(r.nomePopular)+')':'')+'</div><div class="m">Foto '+(i+1)+' · '+esc(r.grupoNome)+' · DIA '+(dias.indexOf(r.data)+1)+' – '+esc(fmtDate(r.data))+' '+esc(r.hora)+' · n='+esc(r.n)+'<br>'+esc(r.uso)+' · '+esc(r.forma)+(r.utmE?'<br>UTM '+esc(r.utmE)+' / '+esc(r.utmN)+' ('+esc(ctx.zona||"24K")+')':'<br>sem coordenada')+(r.obs?'<br>'+esc(r.obs):'')+'</div></div>';});
+  return s+'</body></html>';}
+$("btnPacote").onclick=async()=>{
+  const recs=studyRecs().sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));if(!recs.length){toast("Nada para exportar");return;}
+  if(!window.JSZip){toast("Compactador indisponível");return;}
+  const dias=[...new Set(recs.map(r=>r.data))].sort(),zip=new JSZip(),pre=slug(ctx.estudo)+"_"+today();
+  toast("Montando o pacote…");
+  zip.file("Registros_"+pre+".csv",csvRegistros(recs,dias));
+  const k=kmlRegistros(recs,dias);zip.file("Registros_"+pre+".kml",k.kml);
+  let nf=0;for(const r of recs.filter(r=>r.temFoto)){const b=await fotoGet(r.id);if(b){zip.file("Fotos/"+fotoNome(r,dias),b);nf++;}}
+  zip.file("Relatorio_Fotos.html",relatorioFotos(recs.map(r=>({...r,temFoto:r.temFoto&&true})),dias));
+  zip.file("Estudo_"+pre+".json",JSON.stringify(arquivoEstudo(true)));
+  zip.file("LEIA-ME.txt","Pacote do estudo: "+ctx.estudo+"\nGerado em "+new Date().toLocaleString("pt-BR")+"\n\n- Registros_*.csv: planilha para o Excel (separador ponto e vírgula)\n- Registros_*.kml: pontos para Google Earth/QGIS (zona UTM "+(ctx.zona||"24K")+", SIRGAS 2000)\n- Relatorio_Fotos.html: abra no navegador (precisa da pasta Fotos ao lado)\n- Fotos/: fotos nomeadas por dia, espécie e coordenada\n- Estudo_*.json: arquivo do estudo, para abrir no app Estudo de Fauna – Análise\n"+(k.sem?"\nAtenção: "+k.sem+" registro(s) sem coordenada ficaram fora do KML.\n":""));
+  const out=await zip.generateAsync({type:"blob"});if(!(await baixar("Pacote_"+pre+".zip",out)))return;
+  toast("Pacote salvo ("+recs.length+" registros, "+nf+" fotos"+(k.sem?", "+k.sem+" sem coordenada":"")+")");};
+$("btnExpFotos").onclick=async()=>{
+  const recs=studyRecs().filter(r=>r.temFoto);if(!recs.length){toast("Nenhuma foto neste estudo");return;}
+  if(!window.JSZip){toast("Compactador indisponível");return;}
+  const dias=[...new Set(studyRecs().map(r=>r.data))].sort();const zip=new JSZip();let n=0;
+  toast("Preparando "+recs.length+" fotos…");
+  for(const r of recs){const b=await fotoGet(r.id);if(b){zip.file(fotoNome(r,dias),b);n++;}}
+  const out=await zip.generateAsync({type:"blob"});if(await baixar("fotos_"+slug(ctx.estudo)+"_"+today()+".zip",out))toast(n+" fotos no ZIP");};
+$("restoreFile").onchange=async ev=>{const f=ev.target.files[0];ev.target.value="";if(!f)return;
+  try{const d=JSON.parse(await f.text());if(!d.local)throw 0;let n=0;
+    Object.entries(d.local).forEach(([id,e])=>{normGrupo(e.rec);if(!local[id]||(e.rec.editadoEm||e.rec.criadoEm)>(local[id].rec.editadoEm||local[id].rec.criadoEm)){local[id]={rec:e.rec,pending:true};n++;}});
+    (d.extraUsos||[]).forEach(u=>{if(!extraUsos.includes(u))extraUsos.push(u);});LS.set("cf2_usos",extraUsos);saveLocal();refreshAll();toast(n+" registros restaurados (fotos não vêm na cópia)");}
+  catch(e){toast("Esse arquivo não é uma cópia da Caderneta");}};
+function arquivoEstudo(soEstudo){const l={};Object.entries(local).forEach(([id,e])=>{if(!soEstudo||e.rec.estudo===ctx.estudo)l[id]=e;});
+  return {app:"caderneta-fauna",versao:2,geradoEm:new Date().toISOString(),zona:ctx.zona||"24K",ctx,extraUsos,local:l};}
+function nomeBackup(){const d=new Date();return "Fauna_backup_"+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+"_"+pad(d.getHours())+pad(d.getMinutes())+".json";}
+function marcaBackup(){semBackup=0;LS.set("cf3_sem",0);ultBackup=new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});LS.set("cf3_ult",ultBackup);setSync();if(current==="v-capa")renderCapa();}
+async function fazerBackup(auto){const ok=await baixar(nomeBackup(),new Blob([JSON.stringify(arquivoEstudo(false))],{type:"application/json"}));if(ok){marcaBackup();toast("Backup salvo ✓ (confira em Downloads)");}else toast("O backup não foi salvo");}
+async function enviarBackup(){const file=new File([JSON.stringify(arquivoEstudo(false))],nomeBackup(),{type:"application/json"});
+  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"Backup Caderneta de Fauna"});marcaBackup();return;}}
+  catch(e){if(e&&e.name==="AbortError")return;}
+  await fazerBackup(false);}
+$("btnBackup").onclick=()=>fazerBackup(false);
+$("btnCopy").onclick=()=>{const t=$("csvText");navigator.clipboard.writeText(t.value).then(()=>toast("Copiado")).catch(()=>{t.focus();t.select();toast("Selecionado – copie manualmente");});};
+
+/* ---- envio para o Google Drive ---- */
+const URL_PADRAO="";
+let cfg=LS.get("cf2_envio",{url:URL_PADRAO,modo:"wifi"});if(!cfg.modo)cfg.modo="wifi";if(!cfg.url&&URL_PADRAO)cfg.url=URL_PADRAO;
+let semBackup=LS.get("cf3_sem",0),ultBackup=LS.get("cf3_ult","");
+let enviando=false,ultimoErro="",ultimoEnvio=LS.get("cf2_ultimoEnvio","");
+const conexao=()=>navigator.connection&&navigator.connection.type;
+function podeAuto(){if(!cfg.url||!navigator.onLine||cfg.modo==="manual")return false;if(cfg.modo==="qualquer")return true;const t=conexao();return t==="wifi"||t==="ethernet";}
+function pendentes(){return Object.values(local).filter(e=>e.pending);}
+function setSync(){const n=allRecs().length,p=pendentes().length,dot=$("syncDot"),txt=$("syncText"),bar=$("syncBar");dot.className="dot";let cls="";
+  if(!cfg.url){if(n){dot.classList.add("bad");cls="bad";txt.textContent="⚠ "+n+" registro(s) só neste celular · envio ao Drive desligado";}else{dot.classList.add("ok");txt.textContent="Nenhum registro ainda";}}
+  else if(enviando){dot.classList.add("warn");cls="warn";txt.textContent="Enviando…";}
+  else if(p){dot.classList.add("warn");cls="warn";txt.textContent=p+" registro(s) ainda não enviados ao Drive";}
+  else{dot.classList.add("ok");txt.textContent=n+" registro(s) · tudo enviado ao Drive ✓";}
+  {const se=ultBackup?semBackup:n;if(se>0&&n)txt.textContent+=" · "+se+" sem backup em arquivo";}
+  bar.className="sync "+cls;
+  const r=$("envioResumo");if(!r)return;
+  if(!cfg.url)r.textContent="Ainda não configurado. Toque em Configurar e cole o endereço da planilha.";
+  else r.innerHTML=(p?"<b>"+p+"</b> registro(s) aguardando envio.":"Tudo enviado.")+(ultimoEnvio?" Último envio: "+esc(ultimoEnvio)+".":"")+({wifi:" Envio automático só no Wi-Fi.",qualquer:" Envio automático com qualquer internet.",manual:" Envio só pelo botão."}[cfg.modo]);
+  $("envioAviso").hidden=!ultimoErro;$("envioAviso").textContent=ultimoErro;}
+function refreshAll(){setSync();if(current==="v-list")renderList();if(current==="v-sum")renderSum();}
+async function post(body){const r=await fetch(cfg.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body),redirect:"follow"});
+  const j=await r.json();if(!j.ok)throw new Error(j.erro||"erro na planilha");return j;}
+const b64=blob=>new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result).split(",")[1]);fr.onerror=rej;fr.readAsDataURL(blob);});
+function nomeFotoDrive(r){return [(r.especie||("AIDENT_"+(r.nomePopular||"sem_nome"))),r.data.replace(/-/g,""),r.hora.replace(":",""),r.utmE?("E"+r.utmE+"_N"+r.utmN):"",r.id].filter(Boolean).join("_").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\w-]+/g,"_")+".jpg";}
+async function flush(manual){
+  if(enviando||!cfg.url)return;if(!manual&&!podeAuto())return;if(!navigator.onLine){if(manual)toast("Sem internet agora");return;}
+  const fila=pendentes();if(!fila.length){if(manual)toast("Nada para enviar");return;}
+  enviando=true;ultimoErro="";setSync();let ok=0;
+  try{
+    for(const e of fila){const r=e.rec;
+      if(!r.excluido&&r.temFoto&&!r.fotoEnviada){const bl=await fotoGet(r.id);
+        if(bl){const j=await post({foto:{nome:nomeFotoDrive(r),estudo:r.estudo,base64:await b64(bl)}});r.fotoLink=j.foto.url;}
+        r.fotoEnviada=true;saveLocal();}
+    }
+    for(let i=0;i<fila.length;i+=40){const lote=fila.slice(i,i+40);await post({recs:lote.map(e=>e.rec)});
+      lote.forEach(e=>{if(e.rec.excluido)delete local[e.rec.id];else e.pending=false;ok++;});saveLocal();}
+    ultimoEnvio=new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});LS.set("cf2_ultimoEnvio",ultimoEnvio);
+    if(manual)toast(ok+" registro(s) enviados ✓");
+  }catch(err){ultimoErro="O envio parou: "+(err&&err.message?err.message:"sem resposta da planilha")+". Os dados continuam no celular; tente de novo mais tarde.";if(manual)toast("Não foi possível enviar agora");}
+  finally{enviando=false;refreshAll();}}
+let armEnvio=false,armT2;
+$("btnEnviar").onclick=()=>{if(!cfg.url){show("v-ctx");setTimeout(()=>$("cfgEnvio").scrollIntoView(),50);return;}
+  const t=conexao();if(t==="cellular"&&!armEnvio){armEnvio=true;$("btnEnviar").textContent="Está nos dados móveis. Toque de novo para enviar";clearTimeout(armT2);armT2=setTimeout(()=>{armEnvio=false;$("btnEnviar").textContent="Enviar agora";},5000);return;}
+  armEnvio=false;$("btnEnviar").textContent="Enviar agora";flush(true);};
+$("btnCfgEnvio").onclick=()=>{show("v-ctx");setTimeout(()=>$("cfgEnvio").scrollIntoView(),50);};
+function loadCfg(){$("s_url").value=cfg.url||"";$("s_modo").value=cfg.modo;}
+$("btnSalvarEnvio").onclick=()=>{const u=$("s_url").value.trim();if(u&&!/^https:\/\/script\.google(usercontent)?\.com\/.+\/exec/.test(u)){$("testeInfo").textContent="O endereço precisa começar com https://script.google.com/ e terminar em /exec.";return;}
+  cfg={url:u,modo:$("s_modo").value};LS.set("cf2_envio",cfg);$("testeInfo").textContent="Salvo.";setSync();flush(false);};
+$("btnTestar").onclick=async()=>{const u=$("s_url").value.trim();if(!u){$("testeInfo").textContent="Cole o endereço primeiro.";return;}
+  $("testeInfo").textContent="Testando…";try{const r=await fetch(u,{redirect:"follow"});const j=await r.json();$("testeInfo").textContent=j.ok?"Conectado à planilha \""+(j.planilha||"")+"\" ✓":"A planilha respondeu com erro.";}
+  catch(e){$("testeInfo").textContent="Não conectou. Confira o endereço e se a implantação está como \"Qualquer pessoa\".";}};
+window.addEventListener("online",()=>flush(false));
+if(navigator.connection&&navigator.connection.addEventListener)navigator.connection.addEventListener("change",()=>flush(false));
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)flush(false);});
+setInterval(()=>flush(false),60000);
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+
+/* ---- início ---- */
+Object.entries(GRUPOS).forEach(([k,g])=>{const o=document.createElement("option");o.value=k;o.textContent=g.nome;$("qg").appendChild(o);});
+opt($("tg"),Object.entries(GRUPOS).map(([k,g])=>[k,g.nome]));
+setGrupo(grupo);renderUsos();renderFormas();resetForm();renderCtx();setSync();
+show("v-capa");
+IDB.open().then(()=>{setGrupo(grupo);refreshAll();setTimeout(()=>flush(false),1500);});
+})();
+</script>
+</body></html>

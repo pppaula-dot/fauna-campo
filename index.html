@@ -116,7 +116,7 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
 #splash img{width:112px;height:112px;border-radius:24px}
 #splash h1{margin:6px 0 0;font-size:26px;letter-spacing:.04em;text-transform:uppercase}
 #splash p{margin:0;color:var(--muted);font-size:15px}
-#splash small{position:absolute;bottom:calc(28px + env(safe-area-inset-bottom,0px));color:var(--muted);font-size:13px}
+#splash .copy{position:absolute;bottom:calc(30px + env(safe-area-inset-bottom,0px));left:16px;right:16px;color:var(--muted);font-size:14px;line-height:1.5}#splash .copy b{display:block;color:var(--ink);font-size:15px;letter-spacing:.03em}
 </style>
 
 <style>
@@ -174,7 +174,7 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
   <div class="ctxbar" id="ctxbar"></div>
 </header>
 
-<div id="splash"><img src="icon.png" alt=""><h1>Estudo de Fauna</h1><p>Levantamento de campo</p><small id="splashCopy"></small></div>
+<div id="splash"><img src="icon.png" alt=""><h1>Estudo de Fauna</h1><p>Levantamento de campo</p><div class="copy"><b id="splashCopy"></b><span>Rio-Minas Geologia</span><br><span style="font-size:12px">Todos os direitos reservados</span></div></div>
 <!-- ============ CAPA ============ -->
 <section class="view capa" id="v-capa" hidden>
   <img class="logo" src="icon.png" alt="">
@@ -385,7 +385,7 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
 (function(){
 "use strict";
 const $=id=>document.getElementById(id);
-const APP_VER="3.2";
+const APP_VER="3.3";
 
 const GRUPOS={aves:{nome:"Aves",sub:"avifauna"},mamiferos:{nome:"Mamíferos",sub:"mastofauna"},herpetofauna:{nome:"Herpetofauna",sub:"répteis e anfíbios"}};
 const USOS_PADRAO=["Macega","Pastagem","F. florestal","Via de acesso","Área de mineração","Curso hídrico","Café","Eucalipto"];
@@ -818,7 +818,8 @@ if(navigator.connection&&navigator.connection.addEventListener)navigator.connect
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)flush(false);});
 setInterval(()=>flush(false),60000);
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
-if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).catch(()=>{});
+if("serviceWorker" in navigator){const tinha=!!navigator.serviceWorker.controller;navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).catch(()=>{});
+  if(tinha)navigator.serviceWorker.addEventListener("controllerchange",()=>{if($("novaVer"))return;const d=document.createElement("button");d.id="novaVer";d.type="button";d.textContent="Nova versão pronta · toque para atualizar (seus registros ficam guardados)";d.style.cssText="position:fixed;top:0;left:0;right:0;z-index:98;padding:12px 14px;background:#23624A;color:#fff;border:0;font:600 14px/1.3 sans-serif";d.onclick=()=>location.reload();document.body.appendChild(d);});}
 
 
 /* ---- mapa do sítio amostral (KML guardado no app, desenhado sem internet) ---- */
@@ -937,7 +938,7 @@ Object.entries(GRUPOS).forEach(([k,g])=>{const o=document.createElement("option"
 opt($("tg"),Object.entries(GRUPOS).map(([k,g])=>[k,g.nome]));
 setGrupo(grupo);renderUsos();renderFormas();resetForm();renderCtx();setSync();
 show("v-capa");
-{const sp=$("splash");$("splashCopy").textContent="© "+new Date().getFullYear()+" · @paulapmiranda · Rio-Minas Geologia";const fim=()=>{sp.classList.add("out");setTimeout(()=>sp.remove(),600);};setTimeout(fim,1600);sp.onclick=fim;}
+{const sp=$("splash");$("splashCopy").textContent="© "+new Date().getFullYear()+" · @paulapmiranda";const fim=()=>{sp.classList.add("out");setTimeout(()=>sp.remove(),600);};setTimeout(fim,2700);sp.onclick=fim;}
 IDB.open().then(()=>{setGrupo(grupo);refreshAll();setTimeout(()=>flush(false),1500);});
 })();
 </script>

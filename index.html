@@ -111,6 +111,12 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
 @media (prefers-reduced-motion:no-preference){.toast{transition:opacity .2s}}
 #mapCv{width:100%;height:calc(100vh - 440px);min-height:280px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r);touch-action:none;display:block}
 .mapInfo{font-size:14px;margin:8px 0;min-height:20px}.mapLeg{font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;margin:4px 0}.mapLeg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+#splash{position:fixed;inset:0;z-index:99;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px;transition:opacity .45s}
+#splash.out{opacity:0;pointer-events:none}
+#splash img{width:112px;height:112px;border-radius:24px}
+#splash h1{margin:6px 0 0;font-size:26px;letter-spacing:.04em;text-transform:uppercase}
+#splash p{margin:0;color:var(--muted);font-size:15px}
+#splash small{position:absolute;bottom:calc(28px + env(safe-area-inset-bottom,0px));color:var(--muted);font-size:13px}
 </style>
 
 <style>
@@ -168,6 +174,7 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
   <div class="ctxbar" id="ctxbar"></div>
 </header>
 
+<div id="splash"><img src="icon.png" alt=""><h1>Estudo de Fauna</h1><p>Levantamento de campo</p><small id="splashCopy"></small></div>
 <!-- ============ CAPA ============ -->
 <section class="view capa" id="v-capa" hidden>
   <img class="logo" src="icon.png" alt="">
@@ -378,7 +385,7 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
 (function(){
 "use strict";
 const $=id=>document.getElementById(id);
-const APP_VER="3.0";
+const APP_VER="3.1";
 
 const GRUPOS={aves:{nome:"Aves",sub:"avifauna"},mamiferos:{nome:"Mamíferos",sub:"mastofauna"},herpetofauna:{nome:"Herpetofauna",sub:"répteis e anfíbios"}};
 const USOS_PADRAO=["Macega","Pastagem","F. florestal","Via de acesso","Área de mineração","Curso hídrico","Café","Eucalipto"];
@@ -929,6 +936,7 @@ Object.entries(GRUPOS).forEach(([k,g])=>{const o=document.createElement("option"
 opt($("tg"),Object.entries(GRUPOS).map(([k,g])=>[k,g.nome]));
 setGrupo(grupo);renderUsos();renderFormas();resetForm();renderCtx();setSync();
 show("v-capa");
+{const sp=$("splash");$("splashCopy").textContent="© "+new Date().getFullYear()+" · @paulapmiranda · Rio-Minas Geologia";const fim=()=>{sp.classList.add("out");setTimeout(()=>sp.remove(),600);};setTimeout(fim,1600);sp.onclick=fim;}
 IDB.open().then(()=>{setGrupo(grupo);refreshAll();setTimeout(()=>flush(false),1500);});
 })();
 </script>

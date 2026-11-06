@@ -385,7 +385,7 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
 (function(){
 "use strict";
 const $=id=>document.getElementById(id);
-const APP_VER="3.1";
+const APP_VER="3.2";
 
 const GRUPOS={aves:{nome:"Aves",sub:"avifauna"},mamiferos:{nome:"Mamíferos",sub:"mastofauna"},herpetofauna:{nome:"Herpetofauna",sub:"répteis e anfíbios"}};
 const USOS_PADRAO=["Macega","Pastagem","F. florestal","Via de acesso","Área de mineração","Curso hídrico","Café","Eucalipto"];
@@ -402,7 +402,8 @@ SPMAP.herpetofauna=SPMAP.repteis.concat(SPMAP.anfibios);
 
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}};
 let device=LS.get("cf_device",null);if(!device){device="d"+Math.random().toString(36).slice(2,8);LS.set("cf_device",device);}
-let ctx=LS.get("cf2_ctx",{estudo:"",campanha:"1ª campanha",estacao:"Seca",coletor:""});
+const estacaoHoje=()=>{const m=new Date().getMonth()+1;return (m>=10||m<=4)?"Chuvosa":"Seca";};
+let ctx=LS.get("cf2_ctx",{estudo:"",campanha:"1ª campanha",estacao:estacaoHoje(),coletor:""});
 let extraUsos=LS.get("cf2_usos",[]);
 let local=LS.get("cf2_local",{});
 let remote={},remoteLoaded=true;
@@ -437,7 +438,7 @@ function renderCtx(){
   const bt=document.createElement("button");bt.className="btn small";bt.type="button";bt.textContent="Trocar / novo estudo";bt.onclick=()=>show("v-capa");
   b.appendChild(left);b.appendChild(bt);
 }
-function loadCtxForm(){$("c_estudo").value=ctx.estudo;$("c_campanha").value=ctx.campanha;$("c_estacao").value=ctx.estacao;$("c_coletor").value=ctx.coletor;$("c_zona").value=ctx.zona||"24K";
+function loadCtxForm(){$("c_estudo").value=ctx.estudo;$("c_campanha").value=ctx.campanha;$("c_estacao").value=ctx.estudo?ctx.estacao:estacaoHoje();$("c_coletor").value=ctx.coletor;$("c_zona").value=ctx.zona||"24K";
   const dl=$("dl_estudos");dl.innerHTML="";[...new Set(allRecs().map(r=>r.estudo).filter(Boolean))].forEach(e=>{const o=document.createElement("option");o.value=e;dl.appendChild(o);});}
 $("btnCtx").onclick=()=>{const e=$("c_estudo").value.trim();if(!e){toast("Dê um nome ao estudo");return;}
   ctx={estudo:e,campanha:$("c_campanha").value,estacao:$("c_estacao").value,coletor:$("c_coletor").value.trim(),zona:($("c_zona").value.trim().toUpperCase()||"24K")};LS.set("cf2_ctx",ctx);renderCtx();renderUsos();show("v-reg");toast("Pronto");};

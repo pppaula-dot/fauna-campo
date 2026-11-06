@@ -218,8 +218,13 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
   <h2>Forma de registro</h2>
   <div class="seg big" id="formaSeg"></div>
 
-  <h2>Foto e coordenada</h2>
+  <h2>Foto, ponto e coordenada</h2>
   <div class="card">
+    <div class="grid" style="margin-bottom:12px">
+      <label class="f"><span>Nº da foto (câmera)</span><input id="r_numfoto" class="mono" autocomplete="off" placeholder="DSCN0899"></label>
+      <label class="f"><span>Ponto / câmera</span><input id="r_ponto" autocomplete="off" placeholder="Ponto 1"></label>
+    </div>
+    <p class="hint" style="margin:0 0 10px">Foto pelo celular (opcional). Se a foto foi feita na câmera, só digite o número dela acima.</p>
     <div class="photoRow">
       <label class="btn primary" for="fotoCam"><svg viewBox="0 0 24 24"><path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13" r="4"/></svg>Tirar foto</label>
       <label class="btn" for="fotoGal">Escolher da galeria</label>
@@ -272,6 +277,7 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
 
 <section class="view" id="v-list" hidden>
   <h2>Registros</h2>
+  <div class="card" id="aidBox" hidden style="border-color:var(--warn);background:var(--warn-soft)"><div id="aidTxt" style="font-weight:700"></div><div class="actions" style="margin-top:8px"><button class="btn primary" type="button" id="aidBtn">Ver e completar</button></div></div>
   <div class="row">
     <label class="f"><span>Buscar</span><input id="q" autocomplete="off" placeholder="espécie, uso do solo…"></label>
     <label class="f" style="flex:0 0 40%"><span>Grupo</span><select id="qg"><option value="">Todos</option><option value="__aid">A identificar</option></select></label>
@@ -299,7 +305,8 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
     </div>
     <p class="hint">O pacote reúne num só arquivo: planilha, KML, relatório de fotos, fotos e o arquivo do estudo para o app de análise.</p>
     <div class="actions" style="margin-top:10px">
-      <button class="btn" type="button" id="btnExpReg">Só a planilha (Excel)</button>
+      <button class="btn primary" type="button" id="btnXlsx">Planilha de campo (.xlsx)</button>
+      <button class="btn" type="button" id="btnExpReg">CSV</button>
       <button class="btn" type="button" id="btnExpTab">Esta tabela</button>
       <button class="btn" type="button" id="btnExpFotos">Fotos (ZIP)</button>
     </div>
@@ -371,7 +378,7 @@ textarea.csv{font-family:var(--mono);font-size:12px;min-height:160px}
 (function(){
 "use strict";
 const $=id=>document.getElementById(id);
-const APP_VER="2.4";
+const APP_VER="3.0";
 
 const GRUPOS={aves:{nome:"Aves",sub:"avifauna"},mamiferos:{nome:"Mamíferos",sub:"mastofauna"},herpetofauna:{nome:"Herpetofauna",sub:"répteis e anfíbios"}};
 const USOS_PADRAO=["Macega","Pastagem","F. florestal","Via de acesso","Área de mineração","Curso hídrico","Café","Eucalipto"];
@@ -570,10 +577,10 @@ function ditar(btn){
   try{rec.start();}catch(e){btn.classList.remove("on");rec=null;}
 }
 
-function resetForm(){stopGPS();formas=formas.filter(f=>f!=="Registro fotográfico");if(!formas.length)formas=["Visualização"];renderFormas();$("gpsInfo").textContent="";foto=null;showFoto();$("r_utmE").value="";$("r_utmN").value="";$("latlon").value="";$("r_especie").value="";$("r_popular").value="";$("r_n").value=1;$("r_obs").value="";$("r_data").value=today();$("r_hora").value=nowHM();}
+function resetForm(){stopGPS();formas=formas.filter(f=>f!=="Registro fotográfico");if(!formas.length)formas=["Visualização"];renderFormas();$("gpsInfo").textContent="";foto=null;showFoto();$("r_utmE").value="";$("r_utmN").value="";$("latlon").value="";$("r_especie").value="";$("r_popular").value="";$("r_n").value=1;$("r_obs").value="";$("r_numfoto").value="";$("r_data").value=today();$("r_hora").value=nowHM();}
 function startEdit(r){editing=r;setGrupo(r.grupo);$("r_especie").value=r.especie;$("r_popular").value=r.nomePopular||"";$("r_n").value=r.n;
   uso=r.uso;renderUsos();formas=(r.forma||"").split(" / ").filter(Boolean);renderFormas();
-  $("r_data").value=r.data;$("r_hora").value=r.hora;$("r_utmE").value=r.utmE||"";$("r_utmN").value=r.utmN||"";$("r_obs").value=r.obs||"";
+  $("r_data").value=r.data;$("r_hora").value=r.hora;$("r_utmE").value=r.utmE||"";$("r_utmN").value=r.utmN||"";$("r_obs").value=r.obs||"";$("r_numfoto").value=r.numFoto||"";$("r_ponto").value=r.ponto||"";
   foto=null;showFoto();if(r.temFoto){fotoGet(r.id).then(b=>{if(b&&editing&&editing.id===r.id){foto={blob:b,url:URL.createObjectURL(b),existing:true};showFoto();$("fotoInfo").textContent="";}});}
   $("editBanner").hidden=false;$("btnExcluir").hidden=false;disarm();$("btnSalvar").textContent="Salvar alterações";show("v-reg");}
 function endEdit(){editing=null;$("editBanner").hidden=true;$("btnExcluir").hidden=true;$("btnSalvar").textContent="Salvar registro";resetForm();}
@@ -588,7 +595,7 @@ $("btnSalvar").onclick=()=>{
   const data=$("r_data").value||today(),hora=$("r_hora").value||nowHM();
   const f={estudo:editing?editing.estudo:ctx.estudo,campanha:editing?editing.campanha:ctx.campanha,estacao:editing?editing.estacao:ctx.estacao,
     data,hora,periodo:periodoDe(hora),grupo,grupoNome:GRUPOS[grupo].nome,especie:esp,nomePopular:popIn,aIdentificar:!esp,
-    n:Math.max(1,parseInt($("r_n").value,10)||1),uso,forma:formas.join(" / "),
+    n:Math.max(1,parseInt($("r_n").value,10)||1),uso,forma:formas.join(" / "),numFoto:$("r_numfoto").value.trim(),ponto:$("r_ponto").value.trim(),
     utmE:$("r_utmE").value.replace(/\D/g,""),utmN:$("r_utmN").value.replace(/\D/g,""),obs:$("r_obs").value.trim(),
     observador:editing?editing.observador:ctx.coletor};
   const rec=editing?{...editing,...f,editadoEm:new Date().toISOString()}:{...f,id:newId(),bundle:device+"_"+data.replace(/-/g,""),criadoEm:new Date().toISOString(),editadoEm:"",excluido:false};
@@ -610,6 +617,7 @@ $("btnExcluir").onclick=()=>{const b=$("btnExcluir");
 
 /* ---- lista ---- */
 function renderList(){
+  {const n=allRecs().filter(r=>r.estudo===ctx.estudo&&!r.especie).length;$("aidBox").hidden=!(n&&$("qg").value!=="__aid");$("aidTxt").textContent=n+" registro(s) sem nome científico.";}
   const q=$("q").value.trim().toLowerCase(),g=$("qg").value;
   let rows=allRecs().filter(r=>!g||(g==="__aid"?!r.especie:r.grupo===g));
   if(q)rows=rows.filter(r=>[r.especie,r.nomePopular,r.uso,r.forma,r.observador,r.estudo,r.campanha].join(" ").toLowerCase().includes(q));
@@ -666,8 +674,9 @@ async function baixar(nome,blob){
 async function offer(nome,text){if(await baixar(nome,new Blob([text],{type:"text/csv;charset=utf-8"})))toast("Arquivo salvo ✓");}
 function fotoNome(r,dias){return ["DIA"+(dias.indexOf(r.data)+1),(r.especie||("AIDENT_"+(r.nomePopular||"sem_nome"))).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\w]+/g,"_"),r.data.replace(/-/g,""),r.hora.replace(":",""),r.utmE?("E"+r.utmE+"_N"+r.utmN):""].filter(Boolean).join("_")+".jpg";}
 const slug=s=>(s||"estudo").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w]+/g,"-").slice(0,40);
-function csvRegistros(recs,dias){return csv(["Estudo","Campanha","Estação","Dia","Data","Hora","Período","Grupo","Espécie","Nome popular","Situação","Nº indivíduos","Uso do solo","Forma de registro","UTM E","UTM N","Foto","Observador","Observação","ID"],
-    recs.map(r=>[r.estudo,r.campanha,r.estacao,"DIA "+(dias.indexOf(r.data)+1),fmtDate(r.data),r.hora,r.periodo,r.grupoNome,r.especie,r.nomePopular,r.especie?"Identificada":"A identificar",r.n,r.uso,r.forma,r.utmE,r.utmN,r.temFoto?fotoNome(r,dias):"",r.observador,r.obs,r.id]));}
+function csvRegistros(recs,dias){return csv(["Estudo","Campanha","Estação","Dia","Data","Hora","Período","Grupo","Espécie","Nome popular","Situação","Nº indivíduos","Uso do solo","Forma de registro","UTM E","UTM N","Foto","Nº da foto (câmera)","Ponto / câmera","Observador","Observação","ID"],
+    recs.map(r=>[r.estudo,r.campanha,r.estacao,"DIA "+(dias.indexOf(r.data)+1),fmtDate(r.data),r.hora,r.periodo,r.grupoNome,r.especie,r.nomePopular,r.especie?"Identificada":"A identificar",r.n,r.uso,r.forma,r.utmE,r.utmN,r.temFoto?fotoNome(r,dias):"",r.numFoto||"",r.ponto||"",r.observador,r.obs,r.id]));}
+$("aidBtn").onclick=()=>{$("qg").value="__aid";renderList();};
 $("btnExpReg").onclick=()=>{
   const recs=studyRecs().sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));if(!recs.length){toast("Nada para exportar");return;}
   const dias=[...new Set(recs.map(r=>r.data))].sort();
@@ -712,7 +721,7 @@ $("btnPacote").onclick=async()=>{
   if(!window.JSZip){toast("Compactador indisponível");return;}
   const dias=[...new Set(recs.map(r=>r.data))].sort(),zip=new JSZip(),pre=slug(ctx.estudo)+"_"+today();
   toast("Montando o pacote…");
-  zip.file("Registros_"+pre+".csv",csvRegistros(recs,dias));
+  zip.file("Registros_"+pre+".csv",csvRegistros(recs,dias));zip.file("Planilha_Campo_"+pre+".xlsx",await xlsxPlanilha(recs));
   const k=kmlRegistros(recs,dias);zip.file("Registros_"+pre+".kml",k.kml);
   let nf=0;for(const r of recs.filter(r=>r.temFoto)){const b=await fotoGet(r.id);if(b){zip.file("Fotos/"+fotoNome(r,dias),b);nf++;}}
   zip.file("Relatorio_Fotos.html",relatorioFotos(recs.map(r=>({...r,temFoto:r.temFoto&&true})),dias));
@@ -884,6 +893,36 @@ $("mapGPS").onclick=()=>{if(!navigator.geolocation){toast("Sem GPS neste navegad
   $("mapGPS").textContent="Buscando GPS… (toque p/ parar)";
   mapaWatch=navigator.geolocation.watchPosition(p=>{const primeiro=!gpsPos;gpsPos={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy||20};$("mapGPS").textContent="Parar GPS (±"+Math.round(gpsPos.acc)+" m)";if(primeiro){mv.cx=gpsPos.lon;mv.cy=gpsPos.lat;}mapaDesenha();},err=>{toast("GPS indisponível: dê permissão de localização");mapaWatch=null;$("mapGPS").textContent="Minha posição";},{enableHighAccuracy:true,maximumAge:2000,timeout:30000});};
 window.addEventListener("resize",()=>{if(current==="v-map"&&mapaGeo){mapaTam();mapaDesenha();}});
+
+
+/* ---- planilha de campo (.xlsx) no formato da Planilha_Campo_Fauna ---- */
+const xe=t=>String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function xlsxSheet(rows,cols,stylesFor){
+  const col=i=>{let n="",k=i+1;while(k>0){const m=(k-1)%26;n=String.fromCharCode(65+m)+n;k=Math.floor((k-1)/26);}return n;};
+  let x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>'+cols.map((w,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>').join("")+'</cols><sheetData>';
+  rows.forEach((r,ri)=>{x+='<row r="'+(ri+1)+'">';r.forEach((v,ci)=>{if(v===""||v==null)return;const ref=col(ci)+(ri+1);const st=ri===0?3:(stylesFor?stylesFor(ci):0);
+    if(typeof v==="number")x+='<c r="'+ref+'" s="'+st+'"><v>'+v+'</v></c>';else x+='<c r="'+ref+'" s="'+st+'" t="inlineStr"><is><t xml:space="preserve">'+xe(v)+'</t></is></c>';});x+='</row>';});
+  return x+'</sheetData></worksheet>';}
+const serialData=d=>{const [y,m,dd]=d.split("-").map(Number);return Math.round((Date.UTC(y,m-1,dd)-Date.UTC(1899,11,30))/86400000);};
+const serialHora=h=>{const [a,b]=(h||"0:0").split(":").map(Number);return ((a||0)*60+(b||0))/1440;};
+async function xlsxPlanilha(recs){
+  const GN={aves:"Aves",mamiferos:"Mamiferos",herpetofauna:"Herpetofauna"};
+  const head=["Data","Hora","Grupo","Espécie (nome científico)","Nome popular","Quantidade","Forma de registro","Uso do solo","Ponto / câmera","UTM E","UTM N","Nº da foto","Observações","Campanha (app)","Estação (app)"];
+  const rows=[head].concat(recs.map(r=>[serialData(r.data),serialHora(r.hora),GN[r.grupo]||r.grupoNome,r.especie||"",r.nomePopular||"",r.n,r.forma,r.uso,r.ponto||"",r.utmE?+r.utmE:"",r.utmN?+r.utmN:"",r.numFoto||"",r.obs||"",r.campanha,r.estacao]));
+  const proc=[["Campo","Valor"],["Estudo",ctx.estudo],["Campanha",ctx.campanha],["Estação",ctx.estacao],["Zona UTM",ctx.zona||"24K"],["Observador",ctx.coletor],["Gerado em",new Date().toLocaleString("pt-BR")],["Gerado por","Caderneta de Fauna v"+APP_VER]];
+  const z=new JSZip();
+  z.file("[Content_Types].xml",'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>');
+  z.file("_rels/.rels",'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+  z.file("xl/workbook.xml",'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="REGISTROS" sheetId="1" r:id="rId1"/><sheet name="PROCESSO" sheetId="2" r:id="rId2"/></sheets></workbook>');
+  z.file("xl/_rels/workbook.xml.rels",'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
+  z.file("xl/styles.xml",'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="dd/mm/yyyy"/><numFmt numFmtId="165" formatCode="hh:mm"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF23624A"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs></styleSheet>')
+  z.file("xl/worksheets/sheet1.xml",xlsxSheet(rows,[12,8,15,32,26,11,24,20,13,11,12,16,34,16,12],ci=>ci===0?1:ci===1?2:0));
+  z.file("xl/worksheets/sheet2.xml",xlsxSheet(proc,[24,60],null));
+  return await z.generateAsync({type:"blob",mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});}
+$("btnXlsx").onclick=async()=>{
+  const recs=studyRecs().sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));if(!recs.length){toast("Nada para exportar");return;}
+  if(!window.JSZip){toast("Compactador indisponível");return;}
+  const b=await xlsxPlanilha(recs);if(await baixar("Planilha_Campo_"+slug(ctx.estudo)+"_"+today()+".xlsx",b))toast("Planilha salva ("+recs.length+" registros)");};
 
 /* ---- início ---- */
 Object.entries(GRUPOS).forEach(([k,g])=>{const o=document.createElement("option");o.value=k;o.textContent=g.nome;$("qg").appendChild(o);});

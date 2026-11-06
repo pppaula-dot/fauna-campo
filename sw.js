@@ -1,6 +1,6 @@
 /* Caderneta de Fauna – funciona sem internet; atualiza sozinho quando há sinal.
    Não mexe em localStorage nem IndexedDB: os registros ficam intactos. */
-const V="fauna-2.4";
+const V="fauna-3.0";
 const ARQ=["./","index.html","jszip.min.js","icon.png","manifest.json"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(V).then(c=>Promise.all(ARQ.map(a=>c.add(new Request(a,{cache:"reload"})).catch(()=>{})))).then(()=>self.skipWaiting()));});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V&&k.startsWith("fauna-")).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
